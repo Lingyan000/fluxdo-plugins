@@ -7,7 +7,7 @@
   "id": "org.example.notes",
   "name": "笔记",
   "version": "1.0.0",
-  "apiVersion": 1,
+  "apiVersion": 2,
   "author": "Example",
   "summary": "查看和整理笔记",
   "description": "支持搜索、分页和笔记详情。",
@@ -24,3 +24,5 @@
 `id` 与包内清单一致，发布后保持稳定。`version` 遵循 SemVer，`apiVersion` 表示所需宿主 SDK。下载地址指向对应作者仓库的固定 Release 附件。`screenshots` 最多八个 HTTPS 图片地址。
 
 仓库按条目生成 schemaVersion 为 1 的 `index.json`。客户端从同一来源检查更新，跨来源的同 ID 插件由用户明确选择。
+
+新插件使用 schema 9、API 2，通过 permissions 声明通用凭证、Connect 和支付能力。当前校验也接受 schema 8、API 1 的通用插件包，客户端负责执行完整权限和组件校验。

@@ -55,7 +55,12 @@ export function validatePackage(bytes, entry) {
   assert.equal(manifest.id, entry.id);
   assert.equal(manifest.version, entry.version);
   assert.equal(manifest.apiVersion, entry.apiVersion);
-  assert.equal(manifest.schema, 8);
+  assert.ok(manifest.schema === 8 || manifest.schema === 9, '不支持的清单版本');
+  assert.ok(manifest.apiVersion === 1 || manifest.apiVersion === 2, '不支持的脚本 API 版本');
+  if (manifest.apiVersion === 2) {
+    assert.equal(manifest.schema, 9, 'API 2 需要 schema 9');
+    assert.equal(manifest.auth, undefined, 'API 2 使用 permissions 声明公共能力');
+  }
   assert.ok(Buffer.byteLength(JSON.stringify(manifest)) <= 32 * 1024);
   for (const [key, limit] of [['ui', 256 * 1024], ['script', 512 * 1024]]) {
     const name = manifest[key];

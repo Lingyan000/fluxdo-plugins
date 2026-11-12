@@ -1,18 +1,18 @@
 {
   "id": "community.fluxdo.quicknotes",
   "name": "随手记",
-  "version": "1.0.0",
-  "apiVersion": 1,
+  "version": "1.0.1",
+  "apiVersion": 2,
   "author": "FluxDO 社区",
   "summary": "在元宇宙中编辑并保留本地备忘。",
   "description": "保存在设备上的轻量备忘，可在元宇宙中直接编辑。",
   "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/plugins-2026.11.13/quick-notes-1.0.0.fluxplugin",
-  "sha256": "00b0c24aca14ed3f22befb3afb7b460ff730e3417b205457f6edb79d5a9007aa",
+  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/plugins-2026.11.13-api2/quick-notes-1.0.1.fluxplugin",
+  "sha256": "8c9c02482be6280c6cf4231def9219efc7b8bda885f691ccfd43e148f9d385bd",
   "icon": "edit",
   "categories": [
     "效率"
   ],
   "screenshots": [],
-  "changelog": "首次发布到 GitHub 插件市场。"
+  "changelog": "切换到 API 2，继续使用原生组件与本地存储。"
 }

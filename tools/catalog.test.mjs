@@ -15,6 +15,21 @@ test('校验目录与插件包身份', () => {
   validateEntry(entry);
   validatePackage(bytes, entry);
 });
+
+test('API 2 使用 schema 9 并拒绝旧授权声明', () => {
+  function check(overrides) {
+    const updated = { ...manifest, schema: 9, apiVersion: 2, ...overrides };
+    const payload = JSON.parse(bytes);
+    payload.manifest = updated;
+    const encoded = Buffer.from(JSON.stringify(payload));
+    validatePackage(encoded, { ...entry, apiVersion: updated.apiVersion,
+      sha256: createHash('sha256').update(encoded).digest('hex') });
+  }
+  check({});
+  assert.throws(() => check({schema: 8}));
+  assert.throws(() => check({auth: {type: 'token'}}));
+  assert.throws(() => check({apiVersion: 3}));
+});
 test('拒绝摘要或版本不匹配', () => {
   assert.throws(() => validatePackage(bytes, { ...entry, sha256: '0'.repeat(64) }));
   assert.throws(() => validatePackage(bytes, { ...entry, version: '2.0.0' }));

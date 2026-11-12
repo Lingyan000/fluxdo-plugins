@@ -2,7 +2,9 @@
 
 LD士多的 FluxDO 原生插件，支持商品搜索与筛选、商品详情和评论、登录、报价、订单创建、LDC 收银台、订单查询与交付内容。
 
-当前版本为 1.6.6，清单使用 schema 8，脚本 API 版本为 1，需要带有插件市场的新版 FluxDO。
+当前版本为 2.0.0，清单使用 schema 9、脚本 API 2，需要支持 API 2 的 FluxDO 开发版本。授权初始化、回调交接、身份核验和订单流程由插件实现，通过应用公共 Connect、具名凭证和 LDC 收银台串联原生界面。
+
+同源升级按账号迁移旧版未决提交记录，保留原提交号。自动化验证使用模拟授权和付款响应，真实账号与五平台设备仍需联调验收。
 
 ## 安装
 
@@ -19,7 +21,7 @@ LD士多的 FluxDO 原生插件，支持商品搜索与筛选、商品详情和�
 `plugin.json` 声明能力，`main.js` 处理页面事件，`ui.rfwtxt` 声明界面。打包命令如下。
 
 ```sh
-node tools/package.mjs plugins/ld-store dist/ld-store-1.6.6.fluxplugin
+node tools/package.mjs plugins/ld-store dist/ld-store-2.0.0.fluxplugin
 ```
 
 测试与宿主实现见 [FluxDO](https://github.com/Lingyan000/fluxdo)。
