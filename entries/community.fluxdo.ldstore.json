@@ -1,0 +1,18 @@
+{
+  "id": "community.fluxdo.ldstore",
+  "name": "LD士多",
+  "version": "1.6.6",
+  "apiVersion": 1,
+  "author": "FluxDO 社区",
+  "summary": "浏览商品、连接士多账号、使用原生 LDC 收银台并查询订单。",
+  "description": "浏览与搜索商品，原生登录、确认订单、使用 LDC 支付并查看交付内容。",
+  "repository": "https://github.com/Lingyan000/fluxdo-plugins",
+  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/plugins-2026.11.13/ld-store-1.6.6.fluxplugin",
+  "sha256": "b425c34f76caa4ec593cbc3b3c5b24e7d4f80404788d1dbd40e297d44ad93d1e",
+  "icon": "storefront",
+  "categories": [
+    "购物"
+  ],
+  "screenshots": [],
+  "changelog": "首次发布到 GitHub 插件市场。"
+}

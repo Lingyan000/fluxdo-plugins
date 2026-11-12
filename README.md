@@ -29,3 +29,11 @@ node tools/catalog.mjs --check --verify-packages
 在 FluxDO「元宇宙 → 开发中心」中查看交互示例及当前 SDK 参考。插件包使用 UTF-8 JSON，包含 `manifest` 和 `files`。业务逻辑与界面分别放在 JavaScript 和 rfw 文件中。
 
 应用源码及打包工具位于 [FluxDO 仓库](https://github.com/Lingyan000/fluxdo)。
+
+仓库内的 `plugins/quick-notes` 可作为本地数据与原生交互的起点，`plugins/ld-store` 提供商城接入示例。当前包使用 schema 8 和 apiVersion 1，需要带有插件市场的新宿主版本。
+
+```sh
+node tools/package.mjs plugins/quick-notes dist/quick-notes.fluxplugin
+```
+
+打包会输出 SHA-256，供市场条目使用。插件界面与清单还需通过 FluxDO 安装器校验。

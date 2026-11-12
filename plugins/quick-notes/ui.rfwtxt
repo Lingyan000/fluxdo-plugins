@@ -1,0 +1,2 @@
+import fluxdo;
+widget Card = TextInput(label: "随手记", hint: "记下待办或灵感", value: data.note, maxLines: 4, onChanged: event "save" {});

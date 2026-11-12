@@ -19,7 +19,11 @@ function https(value) {
 export function validateEntry(entry) {
   assert.match(entry.id, /^[a-z0-9]+([._-][a-z0-9]+)+$/);
   assert.ok(entry.id.length <= 64);
-  assert.match(entry.version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/);
+  const version = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(entry.version);
+  assert.ok(version, '版本须符合 SemVer');
+  for (const identifier of version[4]?.split('.') ?? []) {
+    assert.ok(!/^0\d+$/.test(identifier), '预发布数字标识不能以零开头');
+  }
   assert.ok(Number.isInteger(entry.apiVersion) && entry.apiVersion >= 1);
   for (const [key, max] of Object.entries({ name: 100, author: 100, summary: 512 })) {
     assert.ok(typeof entry[key] === 'string' && entry[key].length > 0 && entry[key].length <= max, key);
@@ -55,8 +59,11 @@ export function validatePackage(bytes, entry) {
   assert.ok(Buffer.byteLength(JSON.stringify(manifest)) <= 32 * 1024);
   for (const [key, limit] of [['ui', 256 * 1024], ['script', 512 * 1024]]) {
     const name = manifest[key];
-    assert.ok(typeof name === 'string' && !name.startsWith('/') && !name.includes('\\'));
-    assert.ok(name.split('/').every(part => part && part !== '.' && part !== '..'));
+    assert.ok(typeof name === 'string' && !/^[a-z][a-z0-9+.-]*:/i.test(name) && !/[?#\\]/.test(name));
+    assert.ok(name.split('/').every(part => {
+      const decoded = decodeURIComponent(part);
+      return decoded && decoded !== '.' && decoded !== '..' && !/[/\\]/.test(decoded);
+    }));
     assert.ok(typeof files[name] === 'string' && Buffer.byteLength(files[name]) <= limit);
   }
   new Script(files[manifest.script], { filename: manifest.script });
