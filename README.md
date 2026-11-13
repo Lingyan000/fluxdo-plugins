@@ -30,7 +30,7 @@ node tools/catalog.mjs --check --verify-packages
 
 应用源码及打包工具位于 [FluxDO 仓库](https://github.com/Lingyan000/fluxdo)。
 
-仓库内的 `plugins/quick-notes` 可作为本地数据与原生交互的起点，`plugins/ld-store` 提供商城接入示例。当前包使用 schema 8 和 apiVersion 1，需要带有插件市场的新宿主版本。
+仓库内的 `plugins/quick-notes` 可作为本地数据与原生交互的起点，`plugins/ld-store` 提供商城接入示例。当前包使用 schema 9 和 apiVersion 2，需要支持 API 2 的新版 FluxDO。士多的服务协议由插件处理，公共 Connect、凭证存储和 LDC 收银台由应用提供。
 
 ```sh
 node tools/package.mjs plugins/quick-notes dist/quick-notes.fluxplugin
