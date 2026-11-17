@@ -15,5 +15,5 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-      - run: node --test tools/catalog.test.mjs
+      - run: node --test tools/*.test.mjs
       - run: node tools/catalog.mjs --check --verify-packages

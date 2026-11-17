@@ -19,7 +19,7 @@ for (const key of ['ui', 'script']) {
 }
 const bytes = Buffer.from(JSON.stringify({ manifest, files }));
 const sha256 = createHash('sha256').update(bytes).digest('hex');
-validatePackage(bytes, { id: manifest.id, version: manifest.version, apiVersion: manifest.apiVersion, sha256 });
+validatePackage(bytes, { id: manifest.id, version: manifest.version, apiVersion: manifest.apiVersion, requiredFeatures: manifest.requiredFeatures, sha256 });
 await mkdir(dirname(resolve(output)), { recursive: true });
 await writeFile(output, bytes);
-console.log(JSON.stringify({ id: manifest.id, version: manifest.version, apiVersion: manifest.apiVersion, sha256, file: output }, null, 2));
+console.log(JSON.stringify({ id: manifest.id, version: manifest.version, apiVersion: manifest.apiVersion, requiredFeatures: manifest.requiredFeatures, sha256, file: output }, null, 2));

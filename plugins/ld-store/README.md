@@ -2,7 +2,7 @@
 
 LD士多的 FluxDO 原生插件，支持商品搜索与筛选、商品详情和评论、登录、报价、订单创建、LDC 收银台、订单查询与交付内容。
 
-当前版本为 2.0.1，清单使用 schema 9、脚本 API 2，需要支持 API 2 的 FluxDO 开发版本。授权初始化、回调交接、身份核验和订单流程由插件实现，通过应用公共 Connect、具名凭证和 LDC 收银台串联原生界面。
+当前版本为 2.1.0，清单使用 schema 10、脚本 API 2，需要支持必需能力声明、通用确认、长网格及原生执行限额的 FluxDO 开发版本。授权初始化、回调交接、身份核验和订单流程由插件实现，通过应用公共 Connect、具名凭证和 LDC 收银台串联原生界面。
 
 同源升级按账号迁移旧版未决提交记录，保留原提交号。自动化验证使用模拟授权和付款响应，真实账号与五平台设备仍需联调验收。
 
@@ -23,7 +23,20 @@ LD士多的 FluxDO 原生插件，支持商品搜索与筛选、商品详情和�
 `plugin.json` 声明能力，`main.js` 处理页面事件，`ui.rfwtxt` 声明界面。打包命令如下。
 
 ```sh
-node tools/package.mjs plugins/ld-store dist/ld-store-2.0.1.fluxplugin
+node tools/package.mjs plugins/ld-store dist/ld-store-2.1.0.fluxplugin
 ```
 
 测试与宿主实现见 [FluxDO](https://github.com/Lingyan000/fluxdo)。
+
+
+## 2.1 新增能力
+
+- 登录前阅读服务条款并主动勾选同意；随后由宿主单独确认 Connect 账号授权。
+- 原生收藏及分页搜索、发表评论与符合资格的评分、领券和我的优惠券、退款申请与售后进度。
+- 店铺券按商户身份打开原生商品列表；订单券直接进入占用/使用订单。
+- 商品网格采用宿主 GridPage，按视口构建，同行卡片等高。
+- schema 10 声明 confirmationDialog、virtualGrid、nativeExecutionLimits，安装前校验宿主能力。
+
+条款入口与业务协议来自士多公开前端。所有接口测试使用本地响应，未使用真实账号提交付款、评论或退款。真实账户联调由维护者验收。
+
+`node --test tools/ld-store.test.mjs` 覆盖协议取消、Connect 取消、收藏、评分限制、优惠券、售后与重复提交控制。退款请求失败后只查询服务状态，不自动再次 POST。

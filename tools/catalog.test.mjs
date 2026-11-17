@@ -39,3 +39,14 @@ test('拒绝仓库外附件及无效目录', () => {
   assert.throws(() => validateEntry({ ...entry, id: '../plugin' }));
   assert.throws(() => validateEntry({ ...entry, screenshots: ['http://example.org/image.png'] }));
 });
+
+
+test('schema 10 的必需能力必须与市场条目一致', () => {
+  const payload=JSON.parse(bytes);
+  payload.manifest={...manifest,schema:10,apiVersion:2,requiredFeatures:['virtualGrid','confirmationDialog']};
+  const encoded=Buffer.from(JSON.stringify(payload));
+  const record={...entry,apiVersion:2,requiredFeatures:['confirmationDialog','virtualGrid'],sha256:createHash('sha256').update(encoded).digest('hex')};
+  validateEntry(record);validatePackage(encoded,record);
+  assert.throws(()=>validatePackage(encoded,{...record,requiredFeatures:[]}));
+  assert.throws(()=>validateEntry({...record,requiredFeatures:['bad.name']}));
+});

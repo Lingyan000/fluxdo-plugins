@@ -16,6 +16,12 @@ function https(value) {
   return url;
 }
 
+export function requiredFeatures(value) {
+  assert.ok(value === undefined || (Array.isArray(value) && value.length <= 64));
+  for (const name of value ?? []) assert.match(name, /^[a-zA-Z][a-zA-Z0-9]{0,63}$/);
+  return [...new Set(value ?? [])].sort();
+}
+
 export function validateEntry(entry) {
   assert.match(entry.id, /^[a-z0-9]+([._-][a-z0-9]+)+$/);
   assert.ok(entry.id.length <= 64);
@@ -45,6 +51,7 @@ export function validateEntry(entry) {
   }
   for (const image of entry.screenshots ?? []) https(image);
   assert.ok(entry.icon === undefined || (typeof entry.icon === 'string' && entry.icon.length <= 64));
+  requiredFeatures(entry.requiredFeatures);
   return entry;
 }
 
@@ -55,12 +62,15 @@ export function validatePackage(bytes, entry) {
   assert.equal(manifest.id, entry.id);
   assert.equal(manifest.version, entry.version);
   assert.equal(manifest.apiVersion, entry.apiVersion);
-  assert.ok(manifest.schema === 8 || manifest.schema === 9, '不支持的清单版本');
+  assert.ok(manifest.schema >= 8 && manifest.schema <= 10, '不支持的清单版本');
   assert.ok(manifest.apiVersion === 1 || manifest.apiVersion === 2, '不支持的脚本 API 版本');
   if (manifest.apiVersion === 2) {
-    assert.equal(manifest.schema, 9, 'API 2 需要 schema 9');
+    assert.ok(manifest.schema >= 9, 'API 2 需要 schema 9 或更高版本');
     assert.equal(manifest.auth, undefined, 'API 2 使用 permissions 声明公共能力');
   }
+  const features = requiredFeatures(manifest.requiredFeatures);
+  if (features.length) assert.ok(manifest.schema >= 10, '能力声明需要 schema 10');
+  assert.deepEqual(features, requiredFeatures(entry.requiredFeatures), '索引与清单能力声明不一致');
   assert.ok(Buffer.byteLength(JSON.stringify(manifest)) <= 32 * 1024);
   for (const [key, limit] of [['ui', 256 * 1024], ['script', 512 * 1024]]) {
     const name = manifest[key];
