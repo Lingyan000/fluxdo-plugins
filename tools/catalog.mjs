@@ -62,7 +62,7 @@ export function validatePackage(bytes, entry) {
   assert.equal(manifest.id, entry.id);
   assert.equal(manifest.version, entry.version);
   assert.equal(manifest.apiVersion, entry.apiVersion);
-  assert.ok(manifest.schema >= 8 && manifest.schema <= 10, '不支持的清单版本');
+  assert.ok(manifest.schema >= 8 && manifest.schema <= 11, '不支持的清单版本');
   assert.ok(manifest.apiVersion === 1 || manifest.apiVersion === 2, '不支持的脚本 API 版本');
   if (manifest.apiVersion === 2) {
     assert.ok(manifest.schema >= 9, 'API 2 需要 schema 9 或更高版本');
@@ -71,6 +71,17 @@ export function validatePackage(bytes, entry) {
   const features = requiredFeatures(manifest.requiredFeatures);
   if (features.length) assert.ok(manifest.schema >= 10, '能力声明需要 schema 10');
   assert.deepEqual(features, requiredFeatures(entry.requiredFeatures), '索引与清单能力声明不一致');
+  if (manifest.permissions?.forum !== undefined) {
+    assert.ok(manifest.schema >= 11 && manifest.apiVersion === 2, '论坛权限需要 schema 11 和 API 2');
+    assert.ok(Array.isArray(manifest.permissions.forum), '论坛权限须为数组');
+    if (manifest.permissions.forum.length) assert.ok(features.includes('forumRead'), '须声明 forumRead');
+  }
+  for (const page of manifest.pages ?? []) {
+    if (page.navigation === undefined) continue;
+    assert.ok(manifest.schema >= 11 && page.presentation !== 'modal', '导航入口需要 schema 11 的普通页面');
+    assert.ok(features.includes('navigationEntries'), '须声明 navigationEntries');
+    assert.ok(typeof page.navigation?.label === 'string' && page.navigation.label.trim().length > 0 && page.navigation.label.length <= 12, '导航标签无效');
+  }
   assert.ok(Buffer.byteLength(JSON.stringify(manifest)) <= 32 * 1024);
   for (const [key, limit] of [['ui', 256 * 1024], ['script', 512 * 1024]]) {
     const name = manifest[key];

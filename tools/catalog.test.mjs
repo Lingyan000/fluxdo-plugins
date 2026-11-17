@@ -50,3 +50,22 @@ test('schema 10 的必需能力必须与市场条目一致', () => {
   assert.throws(()=>validatePackage(encoded,{...record,requiredFeatures:[]}));
   assert.throws(()=>validateEntry({...record,requiredFeatures:['bad.name']}));
 });
+
+
+test('schema 11 的导航和论坛声明与宿主能力一致', () => {
+  function check(overrides = {}) {
+    const payload = JSON.parse(bytes);
+    payload.manifest = {...manifest, schema: 11, apiVersion: 2,
+      requiredFeatures: ['forumRead', 'navigationEntries'], permissions: {forum: ['activity']},
+      pages: [{id: 'activity', widget: 'Activity', navigation: {label: '动态'}}], ...overrides};
+    const encoded = Buffer.from(JSON.stringify(payload));
+    validatePackage(encoded, {...entry, apiVersion: payload.manifest.apiVersion,
+      requiredFeatures: payload.manifest.requiredFeatures, sha256: createHash('sha256').update(encoded).digest('hex')});
+  }
+  check();
+  assert.throws(() => check({schema: 10}));
+  assert.throws(() => check({apiVersion: 1}));
+  assert.throws(() => check({requiredFeatures: []}));
+  assert.throws(() => check({pages: [{presentation: 'modal', navigation: {label: '动态'}}]}));
+  assert.throws(() => check({pages: [{navigation: {label: ''}}]}));
+});
