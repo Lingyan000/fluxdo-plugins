@@ -1,18 +1,23 @@
 {
   "id": "community.fluxdo.ldstore",
   "name": "LD士多",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "apiVersion": 2,
   "author": "FluxDO 社区",
-  "summary": "浏览商品、连接士多账号、使用原生 LDC 收银台并查询订单。",
-  "description": "浏览与搜索商品，原生登录、确认订单、使用 LDC 支付并查看交付内容。",
+  "summary": "原生浏览与购买、收藏、评论、优惠券和售后。",
+  "description": "阅读并同意士多服务条款后，通过公共 Connect 确认授权；浏览与搜索商品，使用 LDC 收银台并查看交付，管理收藏、优惠券和买家售后。",
   "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.0.2/ld-store-2.0.2.fluxplugin",
-  "sha256": "7c1f7cf51e851f7bc9004da2c247bce911c2b594ddee5429664ad9e39b1bef71",
+  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.1.0/ld-store-2.1.0.fluxplugin",
+  "sha256": "8bca65c769f8779693649e458ad6762e7b9c5d830fa7e96969275a7b45dc7612",
   "icon": "storefront",
   "categories": [
     "购物"
   ],
   "screenshots": [],
-  "changelog": "商品、订单和评论支持上滑自动分页，商品卡片支持同排等高。需要更新 FluxDO 宿主，旧版仍可手动加载更多。"
+  "changelog": "新增协议勾选与独立 Connect 确认、收藏、评论评分、优惠券和退款售后。长商品列表按视口加载并保持同排等高。需要配套的新 FluxDO 测试版（schema 10），请先更新应用。",
+  "requiredFeatures": [
+    "confirmationDialog",
+    "virtualGrid",
+    "nativeExecutionLimits"
+  ]
 }
