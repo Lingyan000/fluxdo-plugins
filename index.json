@@ -5,27 +5,33 @@
     {
       "id": "community.fluxdo.activity",
       "name": "动态订阅",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "FluxDO 社区",
-      "summary": "把订阅用户的论坛动态放到底栏，按需开启更新和未读提醒。",
-      "description": "手动添加论坛用户名或导入关注名单，按用户和类型查看发帖、回复、赞、回应及 Boost。每人保留最近 10 条，点击打开原生话题。后台刷新与本地通知分别授权。",
+      "summary": "按人、类型或未读筛选论坛动态，从关注列表勾选想订阅的人。",
+      "description": "手机上点头像切换订阅，宽屏可在侧栏选人。时间线显示发帖、回复、赞、回应和 Boost 的摘要，点击可打开原生话题。每人保留最近 10 条记录，可以单独开启后台更新和通知。",
       "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.0.0/activity-feed-1.0.0.fluxplugin",
-      "sha256": "db12babe131d8b1ec9fa267890e85451ba669ef176ff47677fc64d5ed7394f46",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.1.0/activity-feed-1.1.0.fluxplugin",
+      "sha256": "85753fb132235f497f00c88bbe563fbbead3f31d89446c19c3907a41ba6f6ef1",
       "icon": "history",
       "categories": [
         "论坛"
       ],
-      "screenshots": [],
-      "changelog": "首次发布。需要支持 schema 12 的 FluxDO。",
+      "screenshots": [
+        "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.1.0/plugins/activity-feed/previews/mobile-large.png",
+        "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.1.0/plugins/activity-feed/previews/desktop-dark.png"
+      ],
+      "changelog": "新增头像名单、宽屏双栏、未读筛选和关注多选。使用相关功能时可申请缺少的权限。请先更新 FluxDO，再从原市场来源更新以保留订阅。",
       "requiredFeatures": [
         "forumRead",
         "navigationEntries",
         "navigationBadge",
         "scheduledTasks",
         "localNotifications",
-        "atomicStorage"
+        "atomicStorage",
+        "runtimePermissions",
+        "adaptiveCollections",
+        "modalDismiss"
       ]
     },
     {
