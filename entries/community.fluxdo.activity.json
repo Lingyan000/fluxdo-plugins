@@ -1,0 +1,17 @@
+{
+  "id": "community.fluxdo.activity",
+  "name": "动态订阅",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "author": "FluxDO 社区",
+  "summary": "把订阅用户的论坛动态放到底栏，按需开启更新和未读提醒。",
+  "description": "手动添加论坛用户名或导入关注名单，按用户和类型查看发帖、回复、赞、回应及 Boost。每人保留最近 10 条，点击打开原生话题。后台刷新与本地通知分别授权。",
+  "repository": "https://github.com/Lingyan000/fluxdo-plugins",
+  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.0.0/activity-feed-1.0.0.fluxplugin",
+  "sha256": "db12babe131d8b1ec9fa267890e85451ba669ef176ff47677fc64d5ed7394f46",
+  "icon": "history",
+  "categories": ["论坛"],
+  "screenshots": [],
+  "changelog": "首次发布。需要支持 schema 12 的 FluxDO。",
+  "requiredFeatures": ["forumRead", "navigationEntries", "navigationBadge", "scheduledTasks", "localNotifications", "atomicStorage"]
+}
