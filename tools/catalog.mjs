@@ -62,13 +62,29 @@ export function validatePackage(bytes, entry) {
   assert.equal(manifest.id, entry.id);
   assert.equal(manifest.version, entry.version);
   assert.equal(manifest.apiVersion, entry.apiVersion);
-  assert.ok(manifest.schema >= 8 && manifest.schema <= 11, '不支持的清单版本');
+  assert.ok(Number.isInteger(manifest.schema) && manifest.schema >= 8 && manifest.schema <= 12, '不支持的清单版本');
   assert.ok(manifest.apiVersion === 1 || manifest.apiVersion === 2, '不支持的脚本 API 版本');
   if (manifest.apiVersion === 2) {
     assert.ok(manifest.schema >= 9, 'API 2 需要 schema 9 或更高版本');
     assert.equal(manifest.auth, undefined, 'API 2 使用 permissions 声明公共能力');
   }
   const features = requiredFeatures(manifest.requiredFeatures);
+  const permissions = manifest.permissions ?? {};
+  if (manifest.tasks !== undefined || 'background' in permissions || 'notifications' in permissions || features.includes('navigationBadge')) {
+    assert.ok(manifest.schema >= 12 && manifest.apiVersion === 2, '任务、通知和角标需要 schema 12 和 API 2');
+    for (const name of ['background','notifications']) assert.ok(!(name in permissions) || typeof permissions[name] === 'boolean');
+    const tasks = manifest.tasks === undefined ? [] : manifest.tasks;
+    assert.ok(Array.isArray(tasks) && tasks.length <= 4);
+    assert.equal(new Set(tasks.map(t=>t.id)).size,tasks.length,'任务 ID 重复');
+    for(const task of tasks) {
+      assert.deepEqual(Object.keys(task).sort(), ['id','title']); assert.match(task.id,/^[A-Za-z][A-Za-z0-9_-]{0,63}$/);
+      assert.ok(typeof task.title === 'string' && task.title.trim() && task.title.length <= 80);
+    }
+    assert.ok(!permissions.background || tasks.length, '后台权限需要任务');
+    assert.ok(!tasks.length || features.includes('scheduledTasks'), '须声明 scheduledTasks');
+    assert.ok(!permissions.notifications || features.includes('localNotifications'), '须声明 localNotifications');
+    assert.ok(!features.includes('navigationBadge') || manifest.pages?.some(p=>p.navigation), '角标需要导航页面');
+  }
   if (features.length) assert.ok(manifest.schema >= 10, '能力声明需要 schema 10');
   assert.deepEqual(features, requiredFeatures(entry.requiredFeatures), '索引与清单能力声明不一致');
   if (manifest.permissions?.forum !== undefined) {

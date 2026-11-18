@@ -1,0 +1,30 @@
+import fluxdo;
+
+widget Card = ListItem(title: "动态订阅", subtitle: data.title, onTap: event "feed" {});
+widget Feed = ListPage(
+  emptyTitle: data.empty, loading: data.manual, hasMore: data.more, onLoadMore: event "more" {},
+  onRefresh: event "refresh" {}, onRetry: event "refresh" {},
+  header: Column(crossAxisAlignment: "stretch", children: [
+    Row(children: [Expanded(child: Label(text: data.title, style: "titleSmall")), IconButton(icon: "settings", tooltip: "订阅管理", onPressed: event "manage" {})]),
+    Wrap(spacing: 8.0, children: [Button(label: data.who, variant: "tonal", onPressed: event "filters" {}), Button(label: "全部已读", variant: "text", onPressed: event "read" {})]),
+    switch data.filters {true: Wrap(spacing: 6.0, children: [...for p in data.people: Choice(label: p.label, selected: p.selected, onSelected: event "select" {who:p.name})]), default: SizedBoxShrink()},
+    Wrap(spacing: 6.0, children: [...for t in data.types: Choice(label: t.label, selected: t.selected, onSelected: event "select" {kind:t.id})]),
+    Notice(),
+  ]),
+  items: [...for r in data.items: ListItem(title: r.title, subtitle: r.meta, onTap: event "topic" {topic:r.topic, post:r.post, owner:r.owner, id:r.id})],
+);
+widget Notice = Column(crossAxisAlignment: "stretch", children: [
+  switch data.error {"": SizedBoxShrink(), default: Label(text: data.error, color: "error")},
+  switch data.scheduleError {"": SizedBoxShrink(), default: Label(text: data.scheduleError, color: "onSurfaceVariant")},
+]);
+widget Settings = PageLayout(children: [
+  TextInput(label: "论坛用户名", hint: "@username", value: data.input, onChanged: event "input" {}, onSubmitted: event "add" {}),
+  ActionBar(actions: [Button(label: "导入我的关注", variant: "text", onPressed: event "import" {}), Button(label: "添加", variant: "tonal", onPressed: event "add" {})]),
+  Notice(), Gap(size: 12),
+  ListItem(title: "自动更新", subtitle: "应用打开时轮流检查订阅", trailing: Toggle(value: data.enabled, onChanged: event "schedule" {mode:"enable"})),
+  switch data.enabled {true: Wrap(spacing: 8.0, children: [...for p in data.pace: Choice(label: p.label, selected: p.selected, onSelected: event "schedule" {pace:p.n})]), default: SizedBoxShrink()},
+  ListItem(title: "后台刷新", subtitle: "频率由系统决定", trailing: Toggle(value: data.background, onChanged: event "schedule" {mode:"background"})),
+  ListItem(title: "新动态通知", trailing: Toggle(value: data.notify, onChanged: event "notify" {})),
+  Divider(), Label(text: "我的订阅", style: "titleSmall"),
+  ...for u in data.users: ListItem(title: u.name, onTap: event "profile" {name:u.name}, trailing: IconButton(icon: "delete", tooltip: "移除订阅", onPressed: event "remove" {id:u.id})),
+]);

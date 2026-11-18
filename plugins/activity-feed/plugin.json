@@ -1,0 +1,20 @@
+{
+  "schema": 12,
+  "apiVersion": 2,
+  "id": "community.fluxdo.activity",
+  "version": "1.0.0",
+  "name": "动态订阅",
+  "author": "FluxDO 社区",
+  "description": "按名单聚合论坛动态，保留最近记录并提醒未读。",
+  "icon": "history",
+  "ui": "ui.rfwtxt",
+  "script": "main.js",
+  "requiredFeatures": ["forumRead", "navigationEntries", "navigationBadge", "scheduledTasks", "localNotifications", "atomicStorage"],
+  "permissions": {"network": [], "forum": ["profiles", "following", "activity"], "identity": true, "background": true, "notifications": true},
+  "tasks": [{"id": "refresh", "title": "更新订阅动态"}],
+  "card": {"widget": "Card"},
+  "pages": [
+    {"id": "feed", "title": "动态订阅", "widget": "Feed", "scroll": false, "navigation": {"label": "订阅", "icon": "history"}},
+    {"id": "settings", "title": "订阅管理", "widget": "Settings", "scroll": false}
+  ]
+}

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { test } from 'node:test';
+import {readFileSync} from 'node:fs';
 import { validateEntry, validatePackage } from './catalog.mjs';
 
 const manifest = { schema: 8, apiVersion: 1, id: 'example.plugin', version: '1.0.0', ui: 'ui.rfwtxt', script: 'main.js' };
@@ -14,6 +15,13 @@ const entry = {
 test('校验目录与插件包身份', () => {
   validateEntry(entry);
   validatePackage(bytes, entry);
+});
+
+test('实际调度清单与索引一致，拒绝漏报的后台授权和角标',()=>{
+  const m=JSON.parse(readFileSync(new URL('../plugins/activity-feed/plugin.json',import.meta.url)));
+  const files=Object.fromEntries([m.ui,m.script].map(name=>[name,readFileSync(new URL('../plugins/activity-feed/'+name,import.meta.url),'utf8')]));
+  function check(overrides){const manifest={...m,...overrides}, bytes=Buffer.from(JSON.stringify({manifest,files}));validatePackage(bytes,{...manifest,sha256:createHash('sha256').update(bytes).digest('hex')});}
+  check({});for(const change of [{schema:11},{tasks:[]},{pages:[]},{tasks:[...m.tasks,...m.tasks]},{requiredFeatures:['forumRead','navigationEntries']}])assert.throws(()=>check(change));
 });
 
 test('API 2 使用 schema 9 并拒绝旧授权声明', () => {
