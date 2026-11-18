@@ -1,30 +1,48 @@
 import fluxdo;
 
-widget Card = ListItem(title: "动态订阅", subtitle: data.title, onTap: event "feed" {});
-widget Feed = ListPage(
-  emptyTitle: data.empty, loading: data.manual, hasMore: data.more, onLoadMore: event "more" {},
-  onRefresh: event "refresh" {}, onRetry: event "refresh" {},
-  header: Column(crossAxisAlignment: "stretch", children: [
-    Row(children: [Expanded(child: Label(text: data.title, style: "titleSmall")), IconButton(icon: "settings", tooltip: "订阅管理", onPressed: event "manage" {})]),
-    Wrap(spacing: 8.0, children: [Button(label: data.who, variant: "tonal", onPressed: event "filters" {}), Button(label: "全部已读", variant: "text", onPressed: event "read" {})]),
-    switch data.filters {true: Wrap(spacing: 6.0, children: [...for p in data.people: Choice(label: p.label, selected: p.selected, onSelected: event "select" {who:p.name})]), default: SizedBoxShrink()},
-    Wrap(spacing: 6.0, children: [...for t in data.types: Choice(label: t.label, selected: t.selected, onSelected: event "select" {kind:t.id})]),
-    Notice(),
+widget Card = ListItem(title: "动态订阅", subtitle: data.title, leading: Symbol(name: "history"), onTap: event "feed" {});
+widget Feed = AdaptivePane(
+  compactHeader: switch data.hasUsers {true: Padding(padding: [12.0, 4.0, 12.0, 0.0], child: PeopleStrip()), default: SizedBoxShrink()},
+  sidebar: ListPage(header: Label(text: "我的订阅", style: "titleMedium"), items: [
+    ...for p in data.people: ListItem(title: p.label, leading: Avatar(label: p.name, url: p.avatar, count: p.count), trailing: switch p.selected {true: Symbol(name: "check", color: "primary"), default: SizedBoxShrink()}, onTap: event "select" {who: p.name})
   ]),
-  items: [...for r in data.items: ListItem(title: r.title, subtitle: r.meta, onTap: event "topic" {topic:r.topic, post:r.post, owner:r.owner, id:r.id})],
+  body: ListPage(empty: FeedEmpty(), loading: data.manual, hasMore: data.more, onLoadMore: event "more" {}, onRefresh: event "refresh" {},
+    header: Column(crossAxisAlignment: "stretch", children: [
+      Row(children: [Expanded(child: Label(text: data.title, style: "labelLarge", color: "onSurfaceVariant")), IconButton(icon: "group", tooltip: "从关注中选择", onPressed: event "import" {}), IconButton(icon: "add", tooltip: "添加订阅", onPressed: event "new" {}), IconButton(icon: "settings", tooltip: "订阅管理", onPressed: event "manage" {})]),
+      switch data.hasUsers {true: Row(children: [
+        Expanded(child: SingleChildScrollView(scrollDirection: "horizontal", primary: false, child: Row(children: [
+          Choice(label: "未读", selected: data.unreadOnly, onSelected: event "unread" {}), Gap(size: 8),
+          ...for t in data.types: Padding(padding: [0.0,0.0,6.0,0.0], child: Choice(label: t.label, selected: t.selected, onSelected: event "select" {kind: t.id}))
+        ]))),
+        switch data.hasUnread {true: IconButton(icon: "check_circle", tooltip: "全部标为已读", onPressed: event "read" {}), default: SizedBoxShrink()}
+      ]), default: SizedBoxShrink()},
+      switch data.needsActivity {true: ListItem(title: "动态读取权限未开启", subtitle: "仍可查看已保存的动态", trailing: Button(label: "允许更新", variant: "tonal", onPressed: event "refresh" {})), default: SizedBoxShrink()},
+      Notice()
+    ]),
+    items: [...for r in data.items: ContentRow(title: r.title, summary: r.summary, meta: r.meta, leading: GestureDetector(child: Avatar(label: r.name, url: r.avatar), onTap: event "profile" {name: r.name}), detail: RelativeTime(value: r.time), onTap: event "topic" {topic: r.topic, post: r.post, owner: r.owner, id: r.id})]
+  )
 );
+widget PeopleStrip = SingleChildScrollView(scrollDirection: "horizontal", primary: false, child: Row(children: [...for p in data.people: Padding(padding: [0.0,0.0,4.0,0.0], child: Choice(label: p.label, layout: "stacked", leading: Avatar(label: p.name, url: p.avatar, size: 34, count: p.count), selected: p.selected, onSelected: event "select" {who: p.name}))]));
+widget FeedEmpty = switch data.hasUsers {
+  true: EmptyState(title: data.empty, icon: "history", action: switch data.filtered {true: Button(label: "清除筛选", variant: "text", onPressed: event "reset" {}), default: Button(label: "更新动态", variant: "text", onPressed: event "refresh" {})}),
+  default: EmptyState(title: "订阅第一位用户", message: "关注的用户有新动态时，会出现在这里。", icon: "group", action: Wrap(alignment: "center", spacing: 8.0, children: [Button(label: "添加用户", icon: "add", onPressed: event "new" {}), Button(label: "从关注中选择", variant: "tonal", onPressed: event "import" {})]))
+};
 widget Notice = Column(crossAxisAlignment: "stretch", children: [
   switch data.error {"": SizedBoxShrink(), default: Label(text: data.error, color: "error")},
-  switch data.scheduleError {"": SizedBoxShrink(), default: Label(text: data.scheduleError, color: "onSurfaceVariant")},
+  switch data.scheduleError {"": SizedBoxShrink(), default: Label(text: data.scheduleError, color: "onSurfaceVariant")}
 ]);
-widget Settings = PageLayout(children: [
-  TextInput(label: "论坛用户名", hint: "@username", value: data.input, onChanged: event "input" {}, onSubmitted: event "add" {}),
-  ActionBar(actions: [Button(label: "导入我的关注", variant: "text", onPressed: event "import" {}), Button(label: "添加", variant: "tonal", onPressed: event "add" {})]),
-  Notice(), Gap(size: 12),
-  ListItem(title: "自动更新", subtitle: "应用打开时轮流检查订阅", trailing: Toggle(value: data.enabled, onChanged: event "schedule" {mode:"enable"})),
-  switch data.enabled {true: Wrap(spacing: 8.0, children: [...for p in data.pace: Choice(label: p.label, selected: p.selected, onSelected: event "schedule" {pace:p.n})]), default: SizedBoxShrink()},
-  ListItem(title: "后台刷新", subtitle: "频率由系统决定", trailing: Toggle(value: data.background, onChanged: event "schedule" {mode:"background"})),
-  ListItem(title: "新动态通知", trailing: Toggle(value: data.notify, onChanged: event "notify" {})),
-  Divider(), Label(text: "我的订阅", style: "titleSmall"),
-  ...for u in data.users: ListItem(title: u.name, onTap: event "profile" {name:u.name}, trailing: IconButton(icon: "delete", tooltip: "移除订阅", onPressed: event "remove" {id:u.id})),
-]);
+widget Settings = ListPage(header: Column(crossAxisAlignment: "stretch", children: [
+    Wrap(spacing: 8.0, children: [Button(label: "添加用户", icon: "add", onPressed: event "new" {}), Button(label: "从关注中选择", variant: "tonal", onPressed: event "import" {})]),
+    Gap(size: 16), Notice(), Surface(child: Column(children: [
+      ListItem(title: "自动更新", subtitle: "应用打开时轮流检查订阅", trailing: Toggle(value: data.enabled, onChanged: event "schedule" {mode: "enable"})),
+      switch data.enabled {true: Wrap(spacing: 6.0, children: [...for p in data.pace: Choice(label: p.label, selected: p.selected, onSelected: event "schedule" {pace: p.n})]), default: SizedBoxShrink()},
+      ListItem(title: "后台刷新", subtitle: "由系统安排更新", trailing: Toggle(value: data.background, onChanged: event "schedule" {mode: "background"})),
+      ListItem(title: "新动态通知", trailing: Toggle(value: data.notify, onChanged: event "notify" {}))
+    ])), Gap(size: 16), Label(text: "我的订阅", style: "titleSmall")]),
+    emptyTitle: "还没有订阅", items: [...for u in data.users: ListItem(title: u.name, leading: Avatar(label: u.name, url: u.avatar), onTap: event "profile" {name: u.name}, trailing: IconButton(icon: "delete", tooltip: "移除订阅", onPressed: event "remove" {id: u.id}))]
+);
+widget AddPerson = PageLayout(children: [TextInput(label: "论坛用户名", hint: "@username", value: data.input, onChanged: event "input" {}, onSubmitted: event "add" {}), Gap(size: 12), Notice(), Button(label: "订阅此人", icon: "add", loading: data.submitting, onPressed: event "add" {})]);
+widget Following = ListPage(search: SearchInput(hint: "筛选已加载的关注", value: data.query, onChanged: event "query" {}), header: Notice(), loading: data.candidatesLoading, error: data.candidatesError, onRetry: event "candidates" {retry: true}, empty: EmptyState(title: "没有匹配的关注", icon: "group", action: switch data.nextCandidates {true: Button(label: "加载下一页", variant: "text", onPressed: event "candidates" {more: true}), default: SizedBoxShrink()}), onRefresh: event "candidates" {}, hasMore: data.nextCandidates, loadingMore: data.candidatesLoading, onLoadMore: event "candidates" {more: true}, actions: Button(label: data.pickLabel, enabled: data.canPick, loading: data.submitting, onPressed: event "apply" {}), items: [...for u in data.choices: switch u.added {
+  true: ListItem(title: u.username, subtitle: "已订阅", leading: Avatar(label: u.username, url: u.avatarUrl), trailing: Symbol(name: "check_circle")),
+  default: ListItem(title: u.username, leading: Avatar(label: u.username, url: u.avatarUrl), trailing: switch u.chosen {true: Symbol(name: "check_circle", color: "primary"), default: Symbol(name: "add")}, onTap: event "pick" {name: u.username})
+}]);
