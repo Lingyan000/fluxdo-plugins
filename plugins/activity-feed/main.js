@@ -120,7 +120,7 @@
     const existing=new Set(s.users.map(u=>identity(u.name)));
     const choices=(v.candidates||[]).filter(u=>identity(u.username).includes(identity(v.query||''))).map(u=>({...u,
       chosen:v.chosen?.has(identity(u.username))||false, added:existing.has(identity(u.username))}));
-    const model={users:s.users, hasUsers:!!s.users.length, filtered:!!(v.who||v.kind||v.unreadOnly),
+    const model={stats:[{label:"订阅用户",value:String(s.users.length)},{label:"未读动态",value:String(totalUnread)}],users:s.users, hasUsers:!!s.users.length, filtered:!!(v.who||v.kind||v.unreadOnly),
       title:`${s.users.length} 位订阅 · ${totalUnread} 条未读`, input:v.input, manual:v.busy, submitting:!!v.submitting,
       empty:!s.users.length?'还没有订阅':v.unreadOnly?'没有未读动态':v.kind?'没有这类动态':'暂无动态', error:v.error||'',
       people, unreadOnly:!!v.unreadOnly, hasUnread:totalUnread>0, needsActivity:!!s.users.length&&!grants.forumActivity,

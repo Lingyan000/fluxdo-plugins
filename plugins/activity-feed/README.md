@@ -4,6 +4,10 @@
 
 最多订阅 50 人，每人保留最近 10 条；首次收到的记录只建立基线。开启自动更新后按所选间隔轮流检查一人。后台刷新和新动态通知分别授权，默认关闭。移动系统自行决定唤醒时间，不提供实时推送；桌面需要应用进程运行。可在插件管理停止任务、关闭通知或清空全部数据。
 
-安装时关闭的权限可以在使用相关功能时再申请。取消会保留输入和选择，页面右上角的权限管理可随时调整。关闭动态读取权限后仍可浏览本地已有记录。
+安装时关闭的权限可以在使用相关功能时再申请。取消会保留输入和选择，卡片更多菜单或插件管理中的权限设置可随时调整。关闭动态读取权限后仍可浏览本地已有记录。
 
-1.1.0 需要支持 `runtimePermissions`、`adaptiveCollections` 和 `modalDismiss` 的 FluxDO。从原市场条目更新可沿用订阅与已读记录。开发时用 `node tools/package.mjs plugins/activity-feed dist/activity-feed-1.1.0.fluxplugin` 构建，真实宿主使用同一发行包运行 QuickJS、存储和界面回归。
+1.2.0 需要支持 `runtimePermissions`、`adaptiveCollections`、`modalDismiss`、`cardNavigation` 和 `contentPresentation` 的 FluxDO。从原市场条目更新可沿用订阅与已读记录。开发时用 `node tools/package.mjs plugins/activity-feed dist/activity-feed-1.2.0.fluxplugin` 构建，真实宿主使用同一发行包运行 QuickJS、存储和界面回归。
+
+卡片下方仅显示订阅人数和未读动态，点击标题、空白或统计区域可进入动态页。卡片内容仍由插件 UI 声明，宿主只负责默认页面路由与独立管理菜单。
+
+`previews/` 为原生界面测试生成的模拟数据截图。

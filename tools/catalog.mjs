@@ -92,6 +92,9 @@ export function validatePackage(bytes, entry) {
     assert.ok(Array.isArray(manifest.permissions.forum), '论坛权限须为数组');
     if (manifest.permissions.forum.length) assert.ok(features.includes('forumRead'), '须声明 forumRead');
   }
+  if (manifest.card?.page !== undefined) {
+    assert.ok(features.includes('cardNavigation') && manifest.pages?.some(p=>p.id===manifest.card.page && p.presentation!=='modal'), '卡片入口须引用普通页面并声明 cardNavigation');
+  }
   for (const page of manifest.pages ?? []) {
     if (page.navigation === undefined) continue;
     assert.ok(manifest.schema >= 11 && page.presentation !== 'modal', '导航入口需要 schema 11 的普通页面');

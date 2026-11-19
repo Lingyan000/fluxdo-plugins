@@ -17,6 +17,16 @@ test('校验目录与插件包身份', () => {
   validatePackage(bytes, entry);
 });
 
+test('整卡入口只能引用普通页面且必须声明能力',()=>{
+  function check(change={}) {
+    const m={...manifest,schema:12,apiVersion:2,requiredFeatures:['cardNavigation'],card:{widget:'Card',page:'home'},pages:[{id:'home',widget:'Home'}],...change};
+    const data=Buffer.from(JSON.stringify({manifest:m,files:JSON.parse(bytes).files}));
+    validatePackage(data,{...entry,apiVersion:2,requiredFeatures:m.requiredFeatures,sha256:createHash('sha256').update(data).digest('hex')});
+  }
+  check();
+  for(const change of [{requiredFeatures:[]},{card:{widget:'Card',page:'absent'}},{pages:[{id:'home',presentation:'modal'}]}])assert.throws(()=>check(change));
+});
+
 test('实际调度清单与索引一致，拒绝漏报的后台授权和角标',()=>{
   const m=JSON.parse(readFileSync(new URL('../plugins/activity-feed/plugin.json',import.meta.url)));
   const files=Object.fromEntries([m.ui,m.script].map(name=>[name,readFileSync(new URL('../plugins/activity-feed/'+name,import.meta.url),'utf8')]));

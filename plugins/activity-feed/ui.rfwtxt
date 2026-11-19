@@ -1,6 +1,6 @@
 import fluxdo;
 
-widget Card = ListItem(title: "动态订阅", subtitle: data.title, leading: Symbol(name: "history"), onTap: event "feed" {});
+widget Card = Statistics(items: data.stats);
 widget Feed = AdaptivePane(
   compactHeader: switch data.hasUsers {true: Padding(padding: [12.0, 4.0, 12.0, 0.0], child: PeopleStrip()), default: SizedBoxShrink()},
   sidebar: ListPage(header: Label(text: "我的订阅", style: "titleMedium"), items: [

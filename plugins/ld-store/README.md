@@ -2,7 +2,7 @@
 
 LD士多的 FluxDO 原生插件，支持商品搜索与筛选、商品详情和评论、登录、报价、订单创建、LDC 收银台、订单查询与交付内容。
 
-当前版本为 2.1.0，清单使用 schema 10、脚本 API 2，需要支持必需能力声明、通用确认、长网格及原生执行限额的 FluxDO 开发版本。授权初始化、回调交接、身份核验和订单流程由插件实现，通过应用公共 Connect、具名凭证和 LDC 收银台串联原生界面。
+当前版本为 2.2.0，清单使用 schema 12、脚本 API 2，需要支持必需能力声明、通用确认、长网格及原生执行限额的 FluxDO 开发版本。授权初始化、回调交接、身份核验和订单流程由插件实现，通过应用公共 Connect、具名凭证和 LDC 收银台串联原生界面。
 
 同源升级按账号迁移旧版未决提交记录，保留原提交号。自动化验证使用模拟授权和付款响应，真实账号与五平台设备仍需联调验收。
 
@@ -23,7 +23,7 @@ LD士多的 FluxDO 原生插件，支持商品搜索与筛选、商品详情和�
 `plugin.json` 声明能力，`main.js` 处理页面事件，`ui.rfwtxt` 声明界面。打包命令如下。
 
 ```sh
-node tools/package.mjs plugins/ld-store dist/ld-store-2.1.0.fluxplugin
+node tools/package.mjs plugins/ld-store dist/ld-store-2.2.0.fluxplugin
 ```
 
 测试与宿主实现见 [FluxDO](https://github.com/Lingyan000/fluxdo)。
@@ -40,3 +40,11 @@ node tools/package.mjs plugins/ld-store dist/ld-store-2.1.0.fluxplugin
 条款入口与业务协议来自士多公开前端。所有接口测试使用本地响应，未使用真实账号提交付款、评论或退款。真实账户联调由维护者验收。
 
 `node --test tools/ld-store.test.mjs` 覆盖协议取消、Connect 取消、收藏、评分限制、优惠券、售后与重复提交控制。退款请求失败后只查询服务状态，不自动再次 POST。
+
+## 2.2 展示与交互
+
+整卡进入商城，卡片内容显示统计。商品列表采用固定搜索和横向分类，筛选在独立弹层确认后应用。详情增加主题金额、折扣、库存销量、卖家入口、受控 Markdown 和图片预览；购买资格按服务数据判断。订单提供金额明细、时间线、默认隐藏的交付内容、复制和重新兑换，可见待处理订单定时核对。系统消息支持原生分页、筛选、标记已读和关联页面跳转。
+
+需要宿主支持 cardNavigation / contentPresentation / runtimePermissions / modalDismiss；请先更新 FluxDO。登录和付款可在操作时申请缺失权限。权限管理位于卡片菜单和插件管理。系统消息以外的网站会话仍在内置浏览器中，可能需要单独登录。
+
+`previews/` 为原生组件测试生成的模拟数据截图，包含图片加载失败的占位状态，不代表真实商品或真实交易。
