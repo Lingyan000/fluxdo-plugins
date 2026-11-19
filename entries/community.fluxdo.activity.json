@@ -1,20 +1,35 @@
 {
   "id": "community.fluxdo.activity",
   "name": "动态订阅",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "apiVersion": 2,
   "author": "FluxDO 社区",
   "summary": "按人、类型或未读筛选论坛动态，从关注列表勾选想订阅的人。",
-  "description": "手机上点头像切换订阅，宽屏可在侧栏选人。时间线显示发帖、回复、赞、回应和 Boost 的摘要，点击可打开原生话题。每人保留最近 10 条记录，可以单独开启后台更新和通知。",
+  "description": "手机上点头像切换订阅，宽屏可在侧栏选人。时间线显示发帖、回复、赞、回应和 Boost 的摘要，点击可打开原生话题。每人保留最近 10 条记录，可以单独开启后台更新和通知。 卡片仅显示订阅人数和未读统计，整张卡片点击进入动态页。预览为模拟数据。",
   "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.1.0/activity-feed-1.1.0.fluxplugin",
-  "sha256": "85753fb132235f497f00c88bbe563fbbead3f31d89446c19c3907a41ba6f6ef1",
+  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.2.0/activity-feed-1.2.0.fluxplugin",
+  "sha256": "75ed1ed9f510de56b3a7041d6ad6dc57ac80d1f160fb857e4bf60eeac839fb3c",
   "icon": "history",
-  "categories": ["论坛"],
-  "screenshots": [
-    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.1.0/plugins/activity-feed/previews/mobile-large.png",
-    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.1.0/plugins/activity-feed/previews/desktop-dark.png"
+  "categories": [
+    "论坛"
   ],
-  "changelog": "新增头像名单、宽屏双栏、未读筛选和关注多选。使用相关功能时可申请缺少的权限。请先更新 FluxDO，再从原市场来源更新以保留订阅。",
-  "requiredFeatures": ["forumRead", "navigationEntries", "navigationBadge", "scheduledTasks", "localNotifications", "atomicStorage", "runtimePermissions", "adaptiveCollections", "modalDismiss"]
+  "screenshots": [
+    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.2.0/plugins/activity-feed/previews/service-card.png",
+    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.2.0/plugins/activity-feed/previews/mobile-large.png",
+    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.2.0/plugins/activity-feed/previews/desktop-dark.png"
+  ],
+  "changelog": "卡片下方简化为订阅人数和未读动态，整卡可进入，更多菜单独立。权限管理位于卡片菜单和插件管理。请先更新支持 cardNavigation / contentPresentation 的 FluxDO，再从原来源更新以保留订阅。",
+  "requiredFeatures": [
+    "forumRead",
+    "navigationEntries",
+    "navigationBadge",
+    "scheduledTasks",
+    "localNotifications",
+    "atomicStorage",
+    "runtimePermissions",
+    "adaptiveCollections",
+    "modalDismiss",
+    "cardNavigation",
+    "contentPresentation"
+  ]
 }
