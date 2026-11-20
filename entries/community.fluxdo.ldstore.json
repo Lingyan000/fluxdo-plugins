@@ -1,14 +1,14 @@
 {
   "id": "community.fluxdo.ldstore",
   "name": "LD士多",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "apiVersion": 2,
   "author": "FluxDO 社区",
   "summary": "原生商品、选券下单、订单交付与系统消息，支持收藏、评论和售后。",
   "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
   "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.2.0/ld-store-2.2.0.fluxplugin",
-  "sha256": "a1817703d3dd3f776d7458542125b3a01bee4c0c60bf3b76931d2d6b157d13ec",
+  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.3.0/ld-store-2.3.0.fluxplugin",
+  "sha256": "637ee9be0c5c4e0202c7935d429b09dac64d673eb76e79091102d16767f2cfba",
   "icon": "storefront",
   "categories": [
     "购物"
@@ -20,7 +20,7 @@
     "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.2.0/plugins/ld-store/previews/messages-light.png",
     "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.2.0/plugins/ld-store/previews/buyerorder-dark.png"
   ],
-  "changelog": "重整商品、订单与个人页面；新增通用金额、数量、Markdown、图片预览和复制；补齐订单明细、状态核对、交付和系统消息。请先更新支持 cardNavigation / contentPresentation 的 FluxDO，再从原来源更新插件。",
+  "changelog": "新增实时未读统计和系统消息同步；断线补查、隐藏暂停，翻页后提示更新且保留当前内容。请先更新支持 eventStreams 的 FluxDO，再从原来源更新插件。",
   "requiredFeatures": [
     "confirmationDialog",
     "virtualGrid",
@@ -28,6 +28,7 @@
     "cardNavigation",
     "contentPresentation",
     "runtimePermissions",
-    "modalDismiss"
+    "modalDismiss",
+    "eventStreams"
   ]
 }
