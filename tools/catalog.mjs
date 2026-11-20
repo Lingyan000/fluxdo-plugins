@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
+import { createHash, createPublicKey, verify } from 'node:crypto';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -30,6 +30,12 @@ export function validateEntry(entry) {
   for (const identifier of version[4]?.split('.') ?? []) {
     assert.ok(!/^0\d+$/.test(identifier), '预发布数字标识不能以零开头');
   }
+  const channel=entry.channel??(version[4]?'preview':'stable');
+  assert.ok(['stable','preview'].includes(channel));
+  assert.ok(channel!=='stable'||!version[4],'测试版本不能声明稳定渠道');
+  assert.ok(entry.withdrawn===undefined||typeof entry.withdrawn==='boolean');
+  assert.ok(entry.withdrawnVersions===undefined||(Array.isArray(entry.withdrawnVersions)&&entry.withdrawnVersions.length<=128&&entry.withdrawnVersions.every(v=>typeof v==='string'&&/^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.+-]+)?$/.test(v))));
+  assert.ok(entry.reason===undefined||(typeof entry.reason==='string'&&entry.reason.length<=1024));
   assert.ok(Number.isInteger(entry.apiVersion) && entry.apiVersion >= 1);
   for (const [key, max] of Object.entries({ name: 100, author: 100, summary: 512 })) {
     assert.ok(typeof entry[key] === 'string' && entry[key].length > 0 && entry[key].length <= max, key);
@@ -58,7 +64,9 @@ export function validateEntry(entry) {
 export function validatePackage(bytes, entry) {
   assert.ok(bytes.byteLength <= maxBundleBytes, '插件包过大');
   assert.equal(createHash('sha256').update(bytes).digest('hex'), entry.sha256, '摘要不匹配');
-  const { manifest, files } = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  const bundle = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  const {manifest,files} = bundle;
+  verifyPublisher(bundle);
   assert.equal(manifest.id, entry.id);
   assert.equal(manifest.version, entry.version);
   assert.equal(manifest.apiVersion, entry.apiVersion);
@@ -70,6 +78,18 @@ export function validatePackage(bytes, entry) {
   }
   const features = requiredFeatures(manifest.requiredFeatures);
   const permissions = manifest.permissions ?? {};
+  if(manifest.dataVersion!==undefined)assert.ok(Number.isInteger(manifest.dataVersion)&&manifest.dataVersion>=1&&manifest.dataVersion<=1000000&&features.includes('dataMigrations'));
+  if(manifest.preferences!==undefined){
+    assert.ok(features.includes('pluginPreferences')&&Array.isArray(manifest.preferences)&&manifest.preferences.length<=24);
+    assert.equal(new Set(manifest.preferences.map(p=>p.key)).size,manifest.preferences.length);
+    for(const field of manifest.preferences){
+      assert.match(field.key,/^[A-Za-z][A-Za-z0-9_-]{0,63}$/);assert.ok(typeof field.title==='string'&&field.title.trim()&&field.title.length<=80);
+      assert.ok(['toggle','text','choice'].includes(field.type));
+      if(field.type==='toggle')assert.ok(field.default===undefined||typeof field.default==='boolean');
+      else if(field.type==='text')assert.ok(field.default===undefined||(typeof field.default==='string'&&field.default.length<=512));
+      else assert.ok(typeof field.default==='string'&&field.options&&Object.hasOwn(field.options,field.default));
+    }
+  }
   if (manifest.tasks !== undefined || 'background' in permissions || 'notifications' in permissions || features.includes('navigationBadge')) {
     assert.ok(manifest.schema >= 12 && manifest.apiVersion === 2, '任务、通知和角标需要 schema 12 和 API 2');
     for (const name of ['background','notifications']) assert.ok(!(name in permissions) || typeof permissions[name] === 'boolean');
@@ -114,6 +134,24 @@ export function validatePackage(bytes, entry) {
   new Script(files[manifest.script], { filename: manifest.script });
 }
 
+function canonical(value){
+  if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';
+  if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}';
+  assert.ok(typeof value!=='number'||Number.isSafeInteger(value));return JSON.stringify(value);
+}
+function verifyPublisher(bundle){
+  const publisher=bundle.publisher;if(!publisher)return;
+  assert.equal(publisher.algorithm,'RSA-SHA256');
+  const hash=value=>createHash('sha256').update(value).digest('hex');
+  const key=raw=>{const k=createPublicKey({key:raw,format:'jwk'}),bits=k.asymmetricKeyDetails?.modulusLength;
+    assert.ok(raw.kty==='RSA'&&raw.e==='AQAB'&&bits>=2048&&bits<=4096);return k;};
+  const check=(k,text,signature)=>{assert.ok(typeof signature==='string'&&signature.length<=1024&&/^[A-Za-z0-9_-]+$/.test(signature));
+    assert.ok(verify('RSA-SHA256',Buffer.from(text),key(k),Buffer.from(signature,'base64url')),'插件签名无效');};
+  const {manifest:m,files:f}=bundle;
+  check(publisher.key,'fluxdo-package-v1\n'+hash(canonical(m))+'\n'+hash(f[m.ui])+'\n'+hash(f[m.script])+'\n',publisher.signature);
+  if(publisher.rotation)check(publisher.rotation.key,'fluxdo-key-v1\n'+hash(canonical({kty:'RSA',n:publisher.key.n,e:publisher.key.e}))+'\n',publisher.rotation.signature);
+}
+
 async function verifyPackage(entry) {
   const response = await fetch(entry.packageUrl, { signal: AbortSignal.timeout(30000) });
   assert.equal(response.status, 200, `${entry.id} 下载失败`);
@@ -133,8 +171,9 @@ export async function buildCatalog({ check = false, verify = false } = {}) {
   const entries = [];
   for (const name of names) {
     const entry = validateEntry(JSON.parse(await readFile(resolve(root, 'entries', name), 'utf8')));
-    assert.equal(name, `${entry.id}.json`);
-    assert.ok(!entries.some(previous => previous.id === entry.id), '重复插件 ID');
+    const channel=entry.channel??(entry.version.includes('-')?'preview':'stable');
+    assert.equal(name, `${entry.id}${channel==='preview'?'.preview':''}.json`);
+    assert.ok(!entries.some(previous => previous.id === entry.id && (previous.channel??(previous.version.includes('-')?'preview':'stable'))===channel), '重复插件 ID 与渠道');
     if (verify) await verifyPackage(entry);
     entries.push(entry);
   }

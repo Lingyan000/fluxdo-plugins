@@ -87,3 +87,11 @@ test('schema 11 的导航和论坛声明与宿主能力一致', () => {
   assert.throws(() => check({pages: [{presentation: 'modal', navigation: {label: '动态'}}]}));
   assert.throws(() => check({pages: [{navigation: {label: ''}}]}));
 });
+
+test('渠道、撤回字段与签名校验',()=>{
+ validateEntry({...entry,channel:'preview',version:'2.0.0-beta.1',withdrawn:true,withdrawnVersions:['1.0.0'],reason:'已撤回'});
+ assert.throws(()=>validateEntry({...entry,channel:'stable',version:'2.0.0-beta.1'}));
+ assert.throws(()=>validateEntry({...entry,withdrawn:'yes'}));
+ const payload=JSON.parse(bytes);payload.publisher={algorithm:'RSA-SHA256',key:{kty:'RSA',n:'bad',e:'AQAB'},signature:'bad'};
+ const bad=Buffer.from(JSON.stringify(payload));assert.throws(()=>validatePackage(bad,{...entry,sha256:createHash('sha256').update(bad).digest('hex')}));
+});
