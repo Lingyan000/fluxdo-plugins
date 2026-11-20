@@ -116,6 +116,10 @@ export function validatePackage(bytes, entry) {
     assert.ok(features.includes('cardNavigation') && manifest.pages?.some(p=>p.id===manifest.card.page && p.presentation!=='modal'), '卡片入口须引用普通页面并声明 cardNavigation');
   }
   for (const page of manifest.pages ?? []) {
+    if (page.appBar !== undefined) {
+      assert.ok(features.includes('pageChrome') && page.appBar && typeof page.appBar === 'object' && !Array.isArray(page.appBar), '标题栏须声明 pageChrome');
+      assert.ok(Object.keys(page.appBar).length > 0 && Object.entries(page.appBar).every(([key,value]) => ['title','actions'].includes(key) && typeof value === 'string' && /^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(value)), '标题栏须引用合法组件');
+    }
     if (page.navigation === undefined) continue;
     assert.ok(manifest.schema >= 11 && page.presentation !== 'modal', '导航入口需要 schema 11 的普通页面');
     assert.ok(features.includes('navigationEntries'), '须声明 navigationEntries');
