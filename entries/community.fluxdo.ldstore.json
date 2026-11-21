@@ -1,28 +1,28 @@
 {
   "id": "community.fluxdo.ldstore",
   "name": "LD士多",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "apiVersion": 2,
   "author": "FluxDO 社区",
   "summary": "原生商品、选券下单、订单交付与系统消息，支持收藏、评论和售后。",
   "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
   "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.4.0/ld-store-2.4.0.fluxplugin",
-  "sha256": "9b8988b820b04d5be2250e9d1e8d9a341cf6ad397111af5c95e72961ccacee78",
+  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.5.0/ld-store-2.5.0.fluxplugin",
+  "sha256": "39f1a0b35f3b87debb6ff413652093a3d57c1de23b157e7ef3e7cae5ecf5780d",
   "icon": "storefront",
   "categories": [
     "购物"
   ],
   "screenshots": [
-    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.4.0/plugins/ld-store/previews/market-light.png",
-    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.4.0/plugins/ld-store/previews/product-light.png",
-    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.4.0/plugins/ld-store/previews/review-light.png",
-    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.4.0/plugins/ld-store/previews/messages-light.png",
-    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.4.0/plugins/ld-store/previews/buyerorder-dark.png",
-    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.4.0/plugins/ld-store/previews/service-card-light.png",
-    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.4.0/plugins/ld-store/previews/service-card-loading-light.png"
+    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/market-light.png",
+    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/product-light.png",
+    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/review-light.png",
+    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/messages-light.png",
+    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/buyerorder-dark.png",
+    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-light.png",
+    "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png"
   ],
-  "changelog": "筛选、收藏、订单和消息操作移入标题栏；商品卡片补充折扣与已售并收紧排版；详情购买按钮靠右，确认兑换使用全宽按钮；统计取数显示骨架，失败保留已有数据。请先更新支持 pageChrome 的 FluxDO，再从原来源更新插件。",
+  "changelog": "修复消息页每次进入误报更新；首屏骨架与保留内容刷新；付款后只核对当前订单，建单自动替换确认页；我的士多展示账号头像。请先更新支持 loadingPlaceholders 和 navigationReplacement 的 FluxDO，再从原来源更新插件。",
   "requiredFeatures": [
     "confirmationDialog",
     "virtualGrid",
@@ -32,6 +32,8 @@
     "runtimePermissions",
     "modalDismiss",
     "eventStreams",
-    "pageChrome"
+    "pageChrome",
+    "loadingPlaceholders",
+    "navigationReplacement"
   ]
 }
