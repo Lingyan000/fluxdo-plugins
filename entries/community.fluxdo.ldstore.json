@@ -1,14 +1,14 @@
 {
   "id": "community.fluxdo.ldstore",
   "name": "LD士多",
-  "version": "2.5.2",
+  "version": "2.6.0",
   "apiVersion": 2,
   "author": "FluxDO 社区",
-  "summary": "原生商品、选券下单、订单交付与系统消息，支持收藏、评论和售后。",
+  "summary": "原生商品、订单与消息，支持补货订阅、评论互动及举报记录，提供四语界面。",
   "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
   "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.5.2/ld-store-2.5.2.fluxplugin",
-  "sha256": "b52fba13484f1c5543c1d6f6283d4ae7e412f8d2558081f5fbf58c07e09c2c64",
+  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.6.0/ld-store-2.6.0.fluxplugin",
+  "sha256": "27b1d6223d8513b2787263d0572ac2bbed0724260c66845c55d9c71de1b39801",
   "icon": "storefront",
   "categories": [
     "购物"
@@ -22,7 +22,7 @@
     "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-light.png",
     "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png"
   ],
-  "changelog": "修复缺图商品摘要阻止订单补图的问题。商城按登录状态显示商品，店铺和评论展示头像、等级、评分及回复。补充近期订单、消费记录、隐藏商品、用券限制和售后记录。兼容士多 2.5.1 的宿主可直接更新。",
+  "changelog": "新增售罄发卡商品的补货订阅、评论回复、赞踩与删除，以及商品/评论举报、处理记录、文字补充和复核。支持简体、台湾繁体、香港繁体与英文，切换语言保留内容。私密举报截图仍在网站上传和查看。升级增加限定评论路径的 DELETE 权限，需要确认。",
   "requiredFeatures": [
     "confirmationDialog",
     "virtualGrid",
@@ -36,6 +36,7 @@
     "loadingPlaceholders",
     "navigationReplacement",
     "credentialClaims",
-    "iconButtonContent"
+    "iconButtonContent",
+    "hostEnvironment"
   ]
 }

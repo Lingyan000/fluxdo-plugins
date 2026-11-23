@@ -5,14 +5,14 @@
     {
       "id": "community.fluxdo.activity",
       "name": "动态订阅",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "apiVersion": 2,
       "author": "FluxDO 社区",
-      "summary": "按人、类型或未读筛选论坛动态，从关注列表勾选想订阅的人。",
-      "description": "手机上点头像切换订阅，宽屏可在侧栏选人。时间线显示发帖、回复、赞、回应和 Boost 的摘要，点击可打开原生话题。每人保留最近 10 条记录，可以单独开启后台更新和通知。 卡片仅显示订阅人数和未读统计，整张卡片点击进入动态页。预览为模拟数据。",
+      "summary": "批量更新订阅与历史分页，从关注或旧名单导入，支持四种语言。",
+      "description": "按人、类型和未读筛选发帖、回复、赞、回应与 Boost，点击打开原生话题。每人最多缓存最近 200 条，并受总容量约束；历史通过服务器分页，每段显示最多 400 条，可继续较早记录。可独立开启系统后台更新与通知，系统关闭通知时提供设置入口。手机与宽屏使用自适应布局，卡片显示订阅人数和未读统计。预览为模拟数据。",
       "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.2.0/activity-feed-1.2.0.fluxplugin",
-      "sha256": "75ed1ed9f510de56b3a7041d6ad6dc57ac80d1f160fb857e4bf60eeac839fb3c",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.3.0/activity-feed-1.3.0.fluxplugin",
+      "sha256": "c472024de3b8dabb27ca6125e55cae93e0491ad9c12da7398b3526ab732b1e9e",
       "icon": "history",
       "categories": [
         "论坛"
@@ -22,7 +22,7 @@
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.2.0/plugins/activity-feed/previews/mobile-large.png",
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.2.0/plugins/activity-feed/previews/desktop-dark.png"
       ],
-      "changelog": "卡片下方简化为订阅人数和未读动态，整卡可进入，更多菜单独立。权限管理位于卡片菜单和插件管理。请先更新支持 cardNavigation / contentPresentation 的 FluxDO，再从原来源更新以保留订阅。",
+      "changelog": "新增全部名单批量更新、真正的历史分页与旧名单导入；前后台共用预算，逐页保存进度，恢复时不重放已完成请求。支持简体、台湾繁体、香港繁体和英文。请先更新支持 notificationStatus 的 FluxDO，再从原来源更新以保留名单。",
       "requiredFeatures": [
         "forumRead",
         "navigationEntries",
@@ -34,20 +34,23 @@
         "adaptiveCollections",
         "modalDismiss",
         "cardNavigation",
-        "contentPresentation"
+        "contentPresentation",
+        "notificationStatus",
+        "hostEnvironment",
+        "pageChrome"
       ]
     },
     {
       "id": "community.fluxdo.ldstore",
       "name": "LD士多",
-      "version": "2.5.2",
+      "version": "2.6.0",
       "apiVersion": 2,
       "author": "FluxDO 社区",
-      "summary": "原生商品、选券下单、订单交付与系统消息，支持收藏、评论和售后。",
+      "summary": "原生商品、订单与消息，支持补货订阅、评论互动及举报记录，提供四语界面。",
       "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
       "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.5.2/ld-store-2.5.2.fluxplugin",
-      "sha256": "b52fba13484f1c5543c1d6f6283d4ae7e412f8d2558081f5fbf58c07e09c2c64",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.6.0/ld-store-2.6.0.fluxplugin",
+      "sha256": "27b1d6223d8513b2787263d0572ac2bbed0724260c66845c55d9c71de1b39801",
       "icon": "storefront",
       "categories": [
         "购物"
@@ -61,7 +64,7 @@
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-light.png",
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png"
       ],
-      "changelog": "修复缺图商品摘要阻止订单补图的问题。商城按登录状态显示商品，店铺和评论展示头像、等级、评分及回复。补充近期订单、消费记录、隐藏商品、用券限制和售后记录。兼容士多 2.5.1 的宿主可直接更新。",
+      "changelog": "新增售罄发卡商品的补货订阅、评论回复、赞踩与删除，以及商品/评论举报、处理记录、文字补充和复核。支持简体、台湾繁体、香港繁体与英文，切换语言保留内容。私密举报截图仍在网站上传和查看。升级增加限定评论路径的 DELETE 权限，需要确认。",
       "requiredFeatures": [
         "confirmationDialog",
         "virtualGrid",
@@ -75,7 +78,8 @@
         "loadingPlaceholders",
         "navigationReplacement",
         "credentialClaims",
-        "iconButtonContent"
+        "iconButtonContent",
+        "hostEnvironment"
       ]
     },
     {
