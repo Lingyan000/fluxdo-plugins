@@ -1737,14 +1737,14 @@ async function loadCommunityPage(ctx,s,page,more,current){
   if(!['product','comment'].includes(ctx.params.type))throw Error('举报对象无效');
   const data=await buyerRequest(ctx,'/reports/'+ctx.params.type+'/'+encodeURIComponent(ctx.params.id));if(!current())return;
   if(String(data.report?.id)!==String(ctx.params.id)||data.report?.targetType!==ctx.params.type)throw Error('举报记录与请求不符');
-  s.report=data.report;
+  s.report=data.report;s.evidence=data.evidence||[];
   const review=['resolved','rejected'].includes(data.report.status);
   write(ctx,{ready:true,report:reportRow(data.report),followupLabel:review?'提交复核申请':'补充说明',
     communityFields:[{name:'note',label:'问题说明或新证据',type:'multiline',required:true,maxLength:1000}],
     events:latestEvents(data.events).map(event=>({title:reportDecisions[event.decision]||'处理记录',message:display(event.publicNote),time:storeDate(event.createdAt)})),
     snapshot:display(data.report.snapshot?.commentContent||data.report.snapshot?.description),hasReportOutcome:!!(data.report.decision||data.report.adminNote||data.report.nextStep),
     evidence:(data.evidence||[]).map(file=>({id:display(file.id),label:display(file.name||file.fileName)||'私密证据'})),
-    reportHint:'举报处理与订单退款分别进行。私密截图可在网站查看与补充。'});
+    canAddEvidence:!review&&s.evidence.length<3,reportHint:'举报处理与订单退款分别进行。截图仅用于平台核查。'});
 }
 fluxdo.on('reports',()=>fluxdo.navigate('reports'));
 fluxdo.on('reportTab',(ctx,a)=>{const s=market(ctx);if(ctx.page==='reports'&&s&&!s.loading&&(a.value===''||Object.hasOwn(reportStates,a.value))){s.reportStatus=a.value;return loadBuyerPage(ctx,false);}});
@@ -1876,6 +1876,7 @@ fluxdo.on('signOut',async ctx=>{
   if(!await ctx.api.dialogs.confirm({title:'退出士多登录',message:'退出后仍可浏览商品。再次兑换时需要重新授权。',confirmLabel:'退出登录'}))return;
   identitySigningOut=true;clearAccountIdentity();
   notificationBlocked=true;notificationSummary=null;notificationRetryAt=0;stopNotificationFallback();
+  await ctx.api.tasks?.cancel('messages');await ctx.api.navigation?.setBadge?.('market',0);await ctx.api.notifications?.cancel('store-messages');await ctx.api.storage.remove?.(reminderKey);
   if(notificationRetryTimer)clearTimeout(notificationRetryTimer);notificationRetryTimer=null;
   if(notificationOwner) {try {await notificationOwner.ctx.api.streams.close('notifications');}catch(_) {}}
   notificationOwner=null;
@@ -1979,3 +1980,93 @@ fluxdo.on('messageOpen',(ctx,a)=>{
   if(relative.startsWith('/') && !relative.startsWith('//') && !relative.includes('\\'))return ctx.api.browser.open('https://ldcstore.com'+relative,{mode:'inApp'});
 });
 fluxdo.on('webMessages',()=>fluxdo.session.open('/user/messages'));
+
+// 定时任务只读取消息；系统调度时间由平台决定，首次查询仅建立基线。
+const reminderKey='message-reminders';
+async function messageCheck(client,{baseline=false}={}) {
+  const status=await client.credentials.status('account');
+  if(!status.authorized){await client.navigation.setBadge('market',0);return;}
+  const [summary, page]=await Promise.all([
+    client.fetch(api+'/messages/unread-summary',{credential:'account'}),
+    client.fetch(api+'/messages/system?page=1&pageSize=50&readStatus=unread',{credential:'account'}),
+  ]);
+  function data(response){const value=response.json();if(!response.ok||value?.success!==true)throw Error('message_check_failed');return normalizeOrderData(value.data??value);}
+  const counts=data(summary),result=data(page);
+  if(!Array.isArray(result.messages))throw Error('message_check_invalid');
+  await client.navigation.setBadge('market',Math.max(0,Math.min(99999,Math.floor(Number(counts.totalUnread)||0))));
+  const before=await client.storage.get(reminderKey),rows=result.messages;
+  const time=row=>{const raw=row.createdAt;if(typeof raw==='number')return raw<1e12?raw*1000:raw;const value=Date.parse(raw);return Number.isFinite(value)?value:0;};
+  // 使用服务端消息时间建立水位，不依赖设备与服务器时钟同步。
+  const next={at:Math.max(before?.at||0,...rows.map(time)),seen:[...new Set([...rows.map(row=>String(row.id)),...(before?.seen||[])])].slice(0,256)};
+  if(!await client.storage.compareAndSet(reminderKey,before,next))return;
+  if(baseline||!before||!await client.notifications.isAllowed())return;
+  const fresh=rows.filter(row=>!(before.seen||[]).includes(String(row.id))&&time(row)>=before.at);
+  if(!fresh.length)return;
+  await client.notifications.show({key:'store-messages',title:'士多有新消息',body:'有 '+fresh.length+' 条新消息，点击查看',page:'messages'});
+}
+async function renderReminders(ctx){
+  const [tasks,notification]=await Promise.all([ctx.api.tasks.list(),ctx.api.notifications.status()]);
+  const task=tasks.find(item=>item.id==='messages');
+  write(ctx,{ready:true,reminderEnabled:!!task,reminderNotify:!!notification.authorized,
+    reminderBlocked:notification.system==='denied',reminderSettings:notification.canOpenSettings===true,
+    reminderError:task?.error?'最近一次检查失败，稍后会自动重试':'',
+    reminderNote:'约每 15 分钟检查一次。实际执行由系统安排，强制停止应用后不会运行。'});
+}
+fluxdo.on('task.run',(ctx,args)=>args.id==='messages'?messageCheck(ctx.api):undefined);
+fluxdo.on('task.updated',ctx=>ctx.page==='account'&&market(ctx)?.remindersOpen?renderReminders(ctx):undefined);
+fluxdo.on('reminders',async ctx=>{const s=market(ctx);if(!s||ctx.page!=='account')return;s.remindersOpen=!s.remindersOpen;ctx.setData('remindersOpen',s.remindersOpen);if(s.remindersOpen)await renderReminders(ctx);});
+fluxdo.on('reminderToggle',async ctx=>{
+  try{
+    const task=(await ctx.api.tasks.list()).find(item=>item.id==='messages');
+    if(task){await ctx.api.tasks.cancel('messages');await ctx.api.navigation.setBadge('market',0);await ctx.api.notifications.cancel('store-messages');}
+    else{
+      if(!await requestAccess(ctx.api,['serviceAccount','background']))return;
+      if(!(await ctx.api.credentials.status('account')).authorized)throw Error('请先登录士多');
+      if(!await ctx.api.tasks.schedule({id:'messages',intervalSeconds:900,background:true}))return;
+      try{await messageCheck(ctx.api,{baseline:true});}catch(error){await ctx.api.tasks.cancel('messages');throw error;}
+    }
+    await renderReminders(ctx);
+  }catch(error){ctx.setData('reminderError',error.message);}
+});
+fluxdo.on('reminderNotify',async ctx=>{
+  try{if(await ctx.api.notifications.isAllowed())await ctx.api.notifications.revoke();else await ctx.api.notifications.requestPermission();await renderReminders(ctx);}
+  catch(error){ctx.setData('reminderError',error.message);}
+});
+fluxdo.on('reminderSettings',ctx=>ctx.api.notifications.openSettings());
+
+fluxdo.on('evidencePick',async ctx=>{
+  const s=market(ctx);if(ctx.page!=='report'||!s?.report||s.evidenceBusy||s.evidence.length>=3||['resolved','rejected'].includes(s.report.status))return;
+  try{
+    const file=await ctx.api.files.pick({extensions:['png','jpg','jpeg','webp'],maxBytes:5*1024*1024});
+    if(!file)return;
+    if(!['image/png','image/jpeg','image/webp'].includes(file.mimeType)){await ctx.api.files.release(file.handle);throw Error('请选择 PNG、JPEG 或 WebP 图片');}
+    if(s.attachment)await ctx.api.files.release(s.attachment.handle).catch(()=>{});
+    s.attachment=file;s.evidenceOperation=await ctx.api.crypto.uuid();
+    write(ctx,{attachmentName:file.name,attachmentReady:true,evidenceError:'',evidenceProgress:0});
+  }catch(error){ctx.setData('evidenceError',error.message);}
+});
+fluxdo.on('evidencePreview',ctx=>{
+  const s=market(ctx);if(s?.attachment)return ctx.api.files.preview({handle:s.attachment.handle});
+});
+fluxdo.on('evidenceOpen',(ctx,a)=>{
+  const s=market(ctx);if(!s?.evidence?.some(file=>String(file.id)===String(a.id)))return;
+  return ctx.api.files.preview({url:api+'/reports/'+ctx.params.type+'/'+encodeURIComponent(ctx.params.id)+'/evidence/'+encodeURIComponent(a.id),credential:'account'});
+});
+fluxdo.on('files.progress',(ctx,a)=>{const s=market(ctx);if(s?.evidenceBusy&&s.evidenceOperation===a.id)ctx.setData('evidenceProgress',a.total>0?Math.max(0,Math.min(1,a.sent/a.total)):0);});
+fluxdo.on('files.invalidated',ctx=>{const s=market(ctx);if(!s)return;s.attachment=null;s.evidenceBusy=false;write(ctx,{attachmentReady:false,attachmentName:'',evidenceBusy:false});});
+fluxdo.on('evidenceCancel',ctx=>{const s=market(ctx);if(s?.evidenceOperation)return ctx.api.files.cancel(s.evidenceOperation);});
+fluxdo.on('evidenceUpload',async ctx=>{
+  const s=market(ctx);if(ctx.page!=='report'||!s?.attachment||s.evidenceBusy||!s.report||s.evidence.length>=3||['resolved','rejected'].includes(s.report.status))return;
+  const attachment=s.attachment;
+  s.evidenceBusy=true;write(ctx,{evidenceBusy:true,evidenceError:''});
+  try{
+    const response=await ctx.api.files.upload({id:s.evidenceOperation,handle:s.attachment.handle,
+      url:api+'/reports/'+ctx.params.type+'/'+encodeURIComponent(ctx.params.id)+'/evidence',credential:'account',
+      encoding:'base64',field:'data',fields:{operationId:s.evidenceOperation},headers:{Origin:'https://ldcstore.com'}});
+    const body=response.json();if(!response.ok||body?.success!==true)throw Error('上传结果未确认，请先刷新举报记录核对');
+    if(market(ctx)!==s||s.hidden||s.attachment!==attachment)return;
+    await ctx.api.files.release(attachment.handle);s.attachment=null;write(ctx,{attachmentName:'',attachmentReady:false});
+    await loadBuyerPage(ctx,false);
+  }catch(error){if(market(ctx)===s)ctx.setData('evidenceError',error.message);}
+  finally{if(market(ctx)===s){s.evidenceBusy=false;ctx.setData('evidenceBusy',false);}}
+});

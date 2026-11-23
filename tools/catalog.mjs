@@ -22,7 +22,18 @@ export function requiredFeatures(value) {
   return [...new Set(value ?? [])].sort();
 }
 
+function validateLocales(locales, fields) {
+  if(locales===undefined)return;
+  assert.ok(locales && typeof locales==='object' && !Array.isArray(locales) && Object.keys(locales).length<=16);
+  for(const [locale,values] of Object.entries(locales)){
+    assert.match(locale,/^[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8}){0,2}$/);
+    assert.ok(values && typeof values==='object' && !Array.isArray(values));
+    for(const [key,text] of Object.entries(values))assert.ok(fields[key] && typeof text==='string' && text.trim() && text.length<=fields[key] && !/[\x00-\x1f\x7f]/.test(text),'翻译字段无效');
+  }
+}
+
 export function validateEntry(entry) {
+  validateLocales(entry.locales,{name:100,summary:512,description:65536,changelog:32768});
   assert.match(entry.id, /^[a-z0-9]+([._-][a-z0-9]+)+$/);
   assert.ok(entry.id.length <= 64);
   const version = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(entry.version);
@@ -77,6 +88,14 @@ export function validatePackage(bytes, entry) {
     assert.equal(manifest.auth, undefined, 'API 2 使用 permissions 声明公共能力');
   }
   const features = requiredFeatures(manifest.requiredFeatures);
+  if(manifest.locales!==undefined){
+    assert.ok(features.includes('manifestLocalization'),'清单翻译须声明 manifestLocalization');
+    const fields={name:40,...(manifest.description!==undefined?{description:200}:{})};
+    for(const p of manifest.pages??[]){fields['pages.'+p.id+'.title']=40;if(p.navigation)fields['pages.'+p.id+'.navigation.label']=12;}
+    for(const t of manifest.tasks??[])fields['tasks.'+t.id+'.title']=80;
+    for(const p of manifest.preferences??[]){fields['preferences.'+p.key+'.title']=80;for(const key of Object.keys(p.options??{}))fields['preferences.'+p.key+'.options.'+key]=80;}
+    validateLocales(manifest.locales,fields);
+  }
   const permissions = manifest.permissions ?? {};
   if(manifest.dataVersion!==undefined)assert.ok(Number.isInteger(manifest.dataVersion)&&manifest.dataVersion>=1&&manifest.dataVersion<=1000000&&features.includes('dataMigrations'));
   if(manifest.preferences!==undefined){
@@ -156,7 +175,22 @@ function verifyPublisher(bundle){
   if(publisher.rotation)check(publisher.rotation.key,'fluxdo-key-v1\n'+hash(canonical({kty:'RSA',n:publisher.key.n,e:publisher.key.e}))+'\n',publisher.rotation.signature);
 }
 
+export function validateRelease(entry, release) {
+  const channel=entry.channel??(entry.version.includes('-')?'preview':'stable');
+  assert.equal(release.draft, false, '市场不能引用草稿发行版');
+  assert.equal(release.prerelease, channel==='preview', 'GitHub 预发布状态与市场渠道不一致');
+  assert.ok(release.assets?.some(asset=>asset.browser_download_url===entry.packageUrl), '发行版缺少市场声明的附件');
+}
+
 async function verifyPackage(entry) {
+  const url = new URL(entry.packageUrl);
+  const parts=url.pathname.split('/');
+  const release=await fetch(`https://api.github.com/repos/${parts[1]}/${parts[2]}/releases/tags/${encodeURIComponent(decodeURIComponent(parts[5]))}`, {
+    headers:{Accept:'application/vnd.github+json',...(process.env.GITHUB_TOKEN?{Authorization:'Bearer '+process.env.GITHUB_TOKEN}:{})},
+    signal:AbortSignal.timeout(30000),
+  });
+  assert.equal(release.status,200,`${entry.id} 无法核对发行版渠道`);
+  validateRelease(entry,await release.json());
   const response = await fetch(entry.packageUrl, { signal: AbortSignal.timeout(30000) });
   assert.equal(response.status, 200, `${entry.id} 下载失败`);
   const chunks = [];

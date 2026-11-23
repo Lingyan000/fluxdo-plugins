@@ -41,6 +41,15 @@ function setup({authorized=true,claims=null,consent=true,respond=()=>({}),timers
   const fire=(p,name,args={})=>handlers.get(name)(p.ctx,args);
   return {api,handlers,calls,nav,confirmations,page,fire,pendingTimers,streamCalls,setLocale(value){locale=value;},setAuthorized(value){authorized=value;},async tick(){const [id,timer]=pendingTimers.entries().next().value;pendingTimers.delete(id);await timer.fn();}};
 }
+test('繁体账号标题和入口保留士多名称',async()=>{
+  for(const locale of ['zh-TW','zh-HK']){
+    const t=setup({authorized:false,locale});
+    const p=await t.page('account');
+    assert.equal(p.data.pageTitle,'我的士多');
+    assert.ok(Object.values(p.data.i18n).includes('我的士多'));
+    assert.ok(!Object.values(p.data.i18n).includes('我計程車多'));
+  }
+});
 test('不同意士多协议时不初始化授权也不调用 Connect',async()=>{
   const t=setup({consent:false});const ctx={api:t.api,setData:()=>{}};
   await t.handlers.get('login')(ctx);
@@ -676,4 +685,34 @@ test('按订单快照区分原单价、折后单价与券后应付，退出立�
   assert.equal(values['买家'],'买家 · @tester');assert.equal(values['卖家'],'@seller');
   await shop.fire(order,'delivery');assert.equal(order.data.deliveryText,'模拟交付');
   const account=await shop.page('account');await shop.fire(account,'signOut');assert.equal(order.data.deliveryText,'');assert.equal(order.data.fields.length,0);assert.equal(order.data.orderNo,'');
+});
+
+test('定时消息首次建基线不通知，重复任务去重，新消息更新角标',async()=>{
+  let messages=[{id:1,createdAt:'2025-01-01T00:00:00Z'}],checks=0;const shown=[],badges=[],storage=new Map();
+  const t=setup({respond:r=>{checks++;return r.url.pathname.endsWith('unread-summary')?{totalUnread:messages.length}:{messages};}});
+  t.api.storage={get:async key=>storage.get(key)??null,compareAndSet:async(key,expected,value)=>{if(JSON.stringify(storage.get(key)??null)!==JSON.stringify(expected))return false;storage.set(key,value);return true;}};
+  t.api.navigation.setBadge=async(page,count)=>badges.push({page,count});t.api.notifications={isAllowed:async()=>true,show:async options=>shown.push(options)};
+  const ctx={surface:'task',kind:'task',api:t.api};await t.handlers.get('task.run')(ctx,{id:'messages'});assert.equal(shown.length,0);
+  messages=[{id:2,createdAt:'2025-01-01T00:01:00Z'},...messages];await t.handlers.get('task.run')(ctx,{id:'messages'});
+  assert.equal(shown.length,1);assert.equal(shown[0].page,'messages');assert.equal(badges.at(-1).count,2);
+  await t.handlers.get('task.run')(ctx,{id:'messages'});assert.equal(shown.length,1);
+  t.setAuthorized(false);await t.handlers.get('task.run')(ctx,{id:'messages'});assert.equal(checks,6);assert.equal(badges.at(-1).count,0);
+});
+test('私密证据使用宿主句柄与固定操作号，失败不自动上传，预览使用凭证',async()=>{
+  const report={id:1,targetType:'product',status:'awaiting_info'},uploads=[],previews=[],released=[];let fail=true;
+  const t=setup({respond:()=>({report,evidence:[{id:8}],events:[]})});
+  t.api.files={pick:async()=>({handle:'handle',name:'proof.png',size:128,mimeType:'image/png'}),release:async id=>released.push(id),preview:async request=>previews.push(request),upload:async options=>{uploads.push(options);return {ok:!fail,json:()=>({success:!fail})};}};
+  const p=await t.page('report',{type:'product',id:'1'});await t.fire(p,'evidenceOpen',{id:'not-owned'});assert.equal(previews.length,0);
+  await t.fire(p,'evidenceOpen',{id:'8'});assert.equal(previews[0].credential,'account');
+  await t.fire(p,'evidencePick');assert.equal(p.data.attachmentReady,true);await t.fire(p,'evidenceUpload');assert.equal(uploads.length,1);assert.ok(p.data.evidenceError);
+  await t.fire(p,'evidencePreview');await t.fire(p,'page.hide');assert.equal(p.data.attachmentReady,true);await t.fire(p,'page.resume');
+  fail=false;await t.fire(p,'evidenceUpload');assert.equal(uploads[0].fields.operationId,uploads[1].fields.operationId);assert.equal(uploads[1].encoding,'base64');assert.equal(uploads[1].field,'data');assert.deepEqual(released,['handle']);
+  report.status='resolved';await t.fire(p,'buyerRefresh');await t.fire(p,'evidencePick');assert.equal(p.data.canAddEvidence,false);
+});
+
+test('宿主收回证据句柄后停止上传操作，失效句柄不再次提交',async()=>{
+  let uploads=0;const t=setup({respond:()=>({report:{id:1,status:'awaiting_info'},evidence:[],events:[]})});
+  t.api.files={pick:async()=>({handle:'a',name:'proof.png',mimeType:'image/png'}),upload:async()=>{uploads++;},release:async()=>{}};
+  const p=await t.page('report',{type:'product',id:'1'});await t.fire(p,'evidencePick');await t.fire(p,'files.invalidated');
+  assert.equal(p.data.attachmentReady,false);await t.fire(p,'evidenceUpload');assert.equal(uploads,0);
 });

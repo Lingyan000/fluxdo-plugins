@@ -89,7 +89,10 @@
     "s7e7af41bb778403b": "加载下一页",
     "s5ac3c3737429b384": "已订阅",
     "s29d49a8440f8df87": "动态订阅",
-    "s923b88607a265c9d": "批量导入订阅"
+    "s923b88607a265c9d": "批量导入订阅",
+    "sdc390233be0437c8": "按名单聚合论坛动态，保留最近记录并提醒未读。",
+    "scf8efc450f718fbf": "订阅",
+    "s960e8b8bc92ef790": "更新订阅动态"
   },
   "en": {
     "s5edf0d2dfa525fe8": "Notifications are off. Tap again to request access and check system notification settings for FluxDO.",
@@ -181,7 +184,10 @@
     "s7e7af41bb778403b": "Load next page",
     "s5ac3c3737429b384": "Subscribed",
     "s29d49a8440f8df87": "Activity feed",
-    "s923b88607a265c9d": "Import subscriptions"
+    "s923b88607a265c9d": "Import subscriptions",
+    "sdc390233be0437c8": "Follow selected members, keep recent activity and see unread updates.",
+    "scf8efc450f718fbf": "Following",
+    "s960e8b8bc92ef790": "Update activity feed"
   },
   "zh_TW": {
     "s5edf0d2dfa525fe8": "通知尚未開啟。可再次點開關申請，並檢查系統是否允許 FluxDO 傳送通知。",
@@ -273,7 +279,10 @@
     "s7e7af41bb778403b": "載入下一頁",
     "s5ac3c3737429b384": "已訂閱",
     "s29d49a8440f8df87": "動態訂閱",
-    "s923b88607a265c9d": "批次匯入訂閱"
+    "s923b88607a265c9d": "批次匯入訂閱",
+    "sdc390233be0437c8": "按名單聚合論壇動態，保留最近記錄並提醒未讀。",
+    "scf8efc450f718fbf": "訂閱",
+    "s960e8b8bc92ef790": "更新訂閱動態"
   },
   "zh_HK": {
     "s5edf0d2dfa525fe8": "通知尚未開啓。可再次點開關申請，並檢查系統是否允許 FluxDO 發送通知。",
@@ -365,6 +374,9 @@
     "s7e7af41bb778403b": "加載下一頁",
     "s5ac3c3737429b384": "已訂閲",
     "s29d49a8440f8df87": "動態訂閲",
-    "s923b88607a265c9d": "批量導入訂閲"
+    "s923b88607a265c9d": "批量導入訂閲",
+    "sdc390233be0437c8": "按名單聚合論壇動態，保留最近記錄並提醒未讀。",
+    "scf8efc450f718fbf": "訂閲",
+    "s960e8b8bc92ef790": "更新訂閲動態"
   }
 }

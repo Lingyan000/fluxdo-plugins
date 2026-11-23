@@ -1,1 +1,12 @@
-{"name":"fluxdo-market-maintenance","private":true,"type":"module","scripts":{"localize":"node tools/localize.mjs","test":"node --test tools/*.test.mjs"},"devDependencies":{"acorn":"8.19.0","opencc-js":"1.4.2"}}
+{
+  "name": "fluxdo-market-maintenance",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "localize": "node tools/localize.mjs",
+    "test": "node --test tools/*.test.mjs"
+  },
+  "devDependencies": {
+    "@fluxdo/plugin-cli": "https://github.com/Lingyan000/fluxdo-plugin-tools/releases/download/v0.13.0/fluxdo-plugin-cli-0.13.0.tgz"
+  }
+}

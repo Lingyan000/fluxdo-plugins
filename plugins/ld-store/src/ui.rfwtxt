@@ -291,6 +291,8 @@ widget Account = ListPage(loading: data.overviewLoading, onRefresh: event "overv
     ListItem(title: "我的收藏", leading: Symbol(name: "favorite"), trailing: Symbol(name: "chevron_right"), onTap: event "favorites" {}),
     ListItem(title: "我的优惠券", subtitle: data.couponHint, leading: Symbol(name: "gift"), trailing: Symbol(name: "chevron_right"), onTap: event "coupons" {}),
     ListItem(title: "我的举报", leading: Symbol(name: "flag"), trailing: Symbol(name: "chevron_right"), onTap: event "reports" {}),
+    switch data.authorized {true: ListItem(title: "消息提醒", leading: Symbol(name: "notifications"), trailing: Symbol(name: "chevron_right"), onTap: event "reminders" {}), default: SizedBoxShrink()},
+    switch data.remindersOpen {true: Padding(padding: [16.0], child: Reminders()), default: SizedBoxShrink()},
     ListItem(title: "士多消息", leading: Symbol(name: "mail"), trailing: Symbol(name: "chevron_right"), onTap: event "messages" {}),
     switch data.authorized {true: ListItem(title: "消费记录", subtitle: data.spendingSummary, leading: Symbol(name: "payments"), trailing: Label(text: switch data.spendingOpen {true: "收起", default: "展开"}, style: "labelMedium", color: "primary"), onTap: event "spending" {}), default: SizedBoxShrink()},
     switch data.spendingOpen {true: Padding(padding: [16.0], child: Column(crossAxisAlignment: "stretch", children: [
@@ -402,7 +404,20 @@ widget ReportDetail = switch data.ready {
     switch data.hasReportOutcome {true: Column(crossAxisAlignment: "stretch", children: [Gap(size: 20), SectionTitle(title: "处理结果"), Label(text: data.report.decision), SelectableLabel(text: data.report.note), Label(text: data.report.next)]), default: SizedBoxShrink()},
     switch data.snapshot {"": SizedBoxShrink(), default: Column(crossAxisAlignment: "stretch", children: [Gap(size: 16), SectionTitle(title: "举报时的内容"), SelectableLabel(text: data.snapshot)])},
     Gap(size: 16), Label(text: data.reportHint, color: "onSurfaceVariant"),
-    Button(label: "在网站查看私密证据", variant: "text", icon: "open_in_new", onPressed: event "reportWeb" {}),
+    ...for file in data.evidence: ListItem(title: file.label, leading: Symbol(name: "image"), onTap: event "evidenceOpen" {id: file.id}),
+    switch data.canAddEvidence {true: Button(label: "选择证据图片", variant: "tonal", enabled: switch data.evidenceBusy {true: false, default: true}, onPressed: event "evidencePick" {}), default: SizedBoxShrink()},
+    switch data.attachmentReady {true: Column(crossAxisAlignment: "stretch", children: [Label(text: data.attachmentName), ActionBar(actions: [Button(label: "预览", variant: "text", onPressed: event "evidencePreview" {}), Button(label: "上传证据", loading: data.evidenceBusy, onPressed: event "evidenceUpload" {})])]), default: SizedBoxShrink()},
+    switch data.evidenceBusy {true: Column(children: [ProgressBar(value: data.evidenceProgress),Button(label: "取消上传", variant: "text", onPressed: event "evidenceCancel" {})]), default: SizedBoxShrink()},
+    Label(text: data.evidenceError, color: "error"),
     Gap(size: 20), SectionTitle(title: "处理历史"), ...for entry in data.events: Padding(padding: [0.0, 12.0, 0.0, 0.0], child: Column(crossAxisAlignment: "stretch", children: [Label(text: entry.title, style: "titleSmall"), Label(text: entry.message), Label(text: entry.time, style: "labelSmall", color: "onSurfaceVariant")])), Gap(size: 16), BuyerFeedback(),
   ])), default: CommunityPending()
 };
+
+widget Reminders = Column(crossAxisAlignment: "stretch", children: [
+  Label(text: data.reminderNote, color: "onSurfaceVariant"), Gap(size: 16),
+  ListItem(title: "定时检查新消息", subtitle: "使用后台任务查询未读消息", trailing: Toggle(value: data.reminderEnabled, onChanged: event "reminderToggle" {}), onTap: event "reminderToggle" {}),
+  ListItem(title: "发送系统通知", trailing: Toggle(value: data.reminderNotify, onChanged: event "reminderNotify" {}), onTap: event "reminderNotify" {}),
+  switch data.reminderBlocked {true: Label(text: "系统通知已关闭，请在系统设置中允许 FluxDO 发送通知。", color: "error"), default: SizedBoxShrink()},
+  switch data.reminderSettings {true: Button(label: "打开系统通知设置", variant: "text", onPressed: event "reminderSettings" {}), default: SizedBoxShrink()},
+  Label(text: data.reminderError, color: "error"),
+]);

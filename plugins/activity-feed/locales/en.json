@@ -91,5 +91,8 @@
   "动态订阅": "Activity feed",
   "批量导入订阅": "Import subscriptions",
   "未允许{0}。再次点击此功能可重新申请。": "Permission not granted: {0}. Tap the feature again to request access.",
-  "{0}，首次更新未完成。{1}": "{0}. The initial update did not finish. {1}"
+  "{0}，首次更新未完成。{1}": "{0}. The initial update did not finish. {1}",
+  "订阅": "Following",
+  "按名单聚合论坛动态，保留最近记录并提醒未读。": "Follow selected members, keep recent activity and see unread updates.",
+  "更新订阅动态": "Update activity feed"
 }
