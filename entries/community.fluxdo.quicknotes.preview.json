@@ -14,5 +14,6 @@
     "效率"
   ],
   "screenshots": [],
-  "changelog": "切换到 API 2，继续使用原生组件与本地存储。"
+  "changelog": "切换到 API 2，继续使用原生组件与本地存储。",
+  "channel": "preview"
 }

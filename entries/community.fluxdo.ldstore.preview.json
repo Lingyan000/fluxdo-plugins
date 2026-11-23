@@ -1,14 +1,14 @@
 {
   "id": "community.fluxdo.ldstore",
   "name": "LD士多",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "apiVersion": 2,
   "author": "FluxDO 社区",
-  "summary": "原生商品、订单与消息，支持补货订阅、评论互动及举报记录，提供四语界面。",
+  "summary": "原生商城、订单与消息，支持后台提醒、举报证据图片与四语界面。",
   "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
   "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.6.0/ld-store-2.6.0.fluxplugin",
-  "sha256": "27b1d6223d8513b2787263d0572ac2bbed0724260c66845c55d9c71de1b39801",
+  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.7.0/ld-store-2.7.0.fluxplugin",
+  "sha256": "cfeeb4e643e0e316d7b144ec21f0dc04237d694e7b2fe3776e8fa4b68c65929f",
   "icon": "storefront",
   "categories": [
     "购物"
@@ -22,7 +22,7 @@
     "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-light.png",
     "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png"
   ],
-  "changelog": "新增售罄发卡商品的补货订阅、评论回复、赞踩与删除，以及商品/评论举报、处理记录、文字补充和复核。支持简体、台湾繁体、香港繁体与英文，切换语言保留内容。私密举报截图仍在网站上传和查看。升级增加限定评论路径的 DELETE 权限，需要确认。",
+  "changelog": "新增独立开关的后台消息检查、系统通知与商城导航角标，首次仅建基线并按服务端时间去重。举报详情支持选择、私密预览、上传进度与取消。补齐四语清单与任务文案；升级需确认新增后台、通知权限，并使用支持 fileAttachments、manifestLocalization 的宿主。此版本与 GitHub Release 均为预览渠道。",
   "requiredFeatures": [
     "confirmationDialog",
     "virtualGrid",
@@ -37,6 +37,31 @@
     "navigationReplacement",
     "credentialClaims",
     "iconButtonContent",
-    "hostEnvironment"
-  ]
+    "hostEnvironment",
+    "fileAttachments",
+    "scheduledTasks",
+    "localNotifications",
+    "navigationBadge",
+    "navigationEntries",
+    "notificationStatus",
+    "manifestLocalization"
+  ],
+  "locales": {
+    "en": {
+      "name": "LD Store",
+      "summary": "Browse products, sign in, confirm orders, pay with LDC and view delivery details.",
+      "description": "Browse products, sign in, confirm orders, pay with LDC and view delivery details."
+    },
+    "zh_TW": {
+      "name": "LD士多",
+      "summary": "瀏覽與搜尋商品，原生登入、確認訂單、使用 LDC 支付並檢視交付內容。",
+      "description": "瀏覽與搜尋商品，原生登入、確認訂單、使用 LDC 支付並檢視交付內容。"
+    },
+    "zh_HK": {
+      "name": "LD士多",
+      "summary": "瀏覽與搜索商品，原生登錄、確認訂單、使用 LDC 支付並查看交付內容。",
+      "description": "瀏覽與搜索商品，原生登錄、確認訂單、使用 LDC 支付並查看交付內容。"
+    }
+  },
+  "channel": "preview"
 }

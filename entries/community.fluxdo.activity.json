@@ -1,14 +1,14 @@
 {
   "id": "community.fluxdo.activity",
   "name": "动态订阅",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "apiVersion": 2,
   "author": "FluxDO 社区",
   "summary": "批量更新订阅与历史分页，从关注或旧名单导入，支持四种语言。",
   "description": "按人、类型和未读筛选发帖、回复、赞、回应与 Boost，点击打开原生话题。每人最多缓存最近 200 条，并受总容量约束；历史通过服务器分页，每段显示最多 400 条，可继续较早记录。可独立开启系统后台更新与通知，系统关闭通知时提供设置入口。手机与宽屏使用自适应布局，卡片显示订阅人数和未读统计。预览为模拟数据。",
   "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.3.0/activity-feed-1.3.0.fluxplugin",
-  "sha256": "c472024de3b8dabb27ca6125e55cae93e0491ad9c12da7398b3526ab732b1e9e",
+  "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.3.1/activity-feed-1.3.1.fluxplugin",
+  "sha256": "1ff72faedb8e1cf7e8866d8ce7609c863d39f5bbdaf11ff476e2083a401675f5",
   "icon": "history",
   "categories": [
     "论坛"
@@ -18,7 +18,7 @@
     "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.2.0/plugins/activity-feed/previews/mobile-large.png",
     "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.2.0/plugins/activity-feed/previews/desktop-dark.png"
   ],
-  "changelog": "新增全部名单批量更新、真正的历史分页与旧名单导入；前后台共用预算，逐页保存进度，恢复时不重放已完成请求。支持简体、台湾繁体、香港繁体和英文。请先更新支持 notificationStatus 的 FluxDO，再从原来源更新以保留名单。",
+  "changelog": "补齐插件名称、页面、导航和任务标题的四语清单；使用通用本地化 CLI，保留原订阅与缓存。需要支持 manifestLocalization 的新 FluxDO。",
   "requiredFeatures": [
     "forumRead",
     "navigationEntries",
@@ -33,6 +33,24 @@
     "contentPresentation",
     "notificationStatus",
     "hostEnvironment",
-    "pageChrome"
-  ]
+    "pageChrome",
+    "manifestLocalization"
+  ],
+  "locales": {
+    "en": {
+      "name": "Activity feed",
+      "summary": "Follow selected members, keep recent activity and see unread updates.",
+      "description": "Follow selected members, keep recent activity and see unread updates."
+    },
+    "zh_TW": {
+      "name": "動態訂閱",
+      "summary": "按名單聚合論壇動態，保留最近記錄並提醒未讀。",
+      "description": "按名單聚合論壇動態，保留最近記錄並提醒未讀。"
+    },
+    "zh_HK": {
+      "name": "動態訂閲",
+      "summary": "按名單聚合論壇動態，保留最近記錄並提醒未讀。",
+      "description": "按名單聚合論壇動態，保留最近記錄並提醒未讀。"
+    }
+  }
 }
