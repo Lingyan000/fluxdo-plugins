@@ -15,5 +15,7 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
+      - run: npm ci --ignore-scripts
+      - run: node tools/localize.mjs --check
       - run: node --test tools/*.test.mjs
       - run: node tools/catalog.mjs --check --verify-packages

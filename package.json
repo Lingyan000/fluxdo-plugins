@@ -1,0 +1,1 @@
+{"name":"fluxdo-market-maintenance","private":true,"type":"module","scripts":{"localize":"node tools/localize.mjs","test":"node --test tools/*.test.mjs"},"devDependencies":{"acorn":"8.19.0","opencc-js":"1.4.2"}}

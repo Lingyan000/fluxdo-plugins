@@ -30,10 +30,20 @@ node tools/catalog.mjs --check --verify-packages
 
 应用源码及打包工具位于 [FluxDO 仓库](https://github.com/Lingyan000/fluxdo)。
 
-仓库内的 `plugins/quick-notes` 可作为本地数据与原生交互的起点，`plugins/ld-store` 提供商城接入示例。当前包使用 schema 9 和 apiVersion 2，需要支持 API 2 的新版 FluxDO。士多的服务协议由插件处理，公共 Connect、凭证存储和 LDC 收银台由应用提供。
+仓库内的 `plugins/quick-notes` 可作为本地数据与原生交互的起点，`plugins/ld-store` 提供商城接入示例。包内清单声明 schema、apiVersion 和必需的宿主能力，缺少能力时应用会要求升级。士多的服务协议由插件处理，公共 Connect、凭证存储和 LDC 收银台由应用提供。
 
 ```sh
 node tools/package.mjs plugins/quick-notes dist/quick-notes.fluxplugin
 ```
 
 打包会输出 SHA-256，供市场条目使用。插件界面与清单还需通过 FluxDO 安装器校验。
+
+## 维护语言资源
+
+士多与动态订阅的业务源文件位于各插件 `src/`，英文译文在 `locales/en.json`。执行 `npm ci --ignore-scripts`、`npm run localize` 后生成四种语言的文案目录及根目录 JS/RFW，打包只包含清单指向的生成文件。请勿直接编辑生成文件。CI 使用 `node tools/localize.mjs --check` 验证源码、语言资源、清单与产物同步。
+
+中文产品文案在构建时标记，插件显示时依照 `host.environment().locale` 选择简体、台湾繁体、香港繁体或英文。服务返回的标题、用户名、正文和用户输入保持原文；语言变化只重绘已有状态，不重复请求业务接口。清单中的市场名称和导航标签仍由作者提供固定名称。
+
+动态订阅按名单和来源分批读取，每页落盘，并与前台共享请求预算。系统任务受操作系统调度限制；最近记录有容量上限，历史通过服务端游标分页，继续阅读时分段显示。旧名单可在应用的迁移入口复制，再粘贴到插件的批量导入页；插件不直接访问应用旧数据。
+
+士多的补货提醒、评论回复和投票、举报记录与文字补充均使用原生组件。私密举报截图仍在士多网站查看与上传，插件不会将服务凭证注入网页。举报处理和订单售后分别使用各自服务流程。
