@@ -61,14 +61,14 @@
     {
       "id": "community.fluxdo.ldstore",
       "name": "LD士多",
-      "version": "2.7.0",
+      "version": "2.7.1",
       "apiVersion": 2,
       "author": "FluxDO 社区",
       "summary": "原生商城、订单与消息，支持后台提醒、举报证据图片与四语界面。",
       "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
       "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.7.0/ld-store-2.7.0.fluxplugin",
-      "sha256": "cfeeb4e643e0e316d7b144ec21f0dc04237d694e7b2fe3776e8fa4b68c65929f",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.7.1/ld-store-2.7.1.fluxplugin",
+      "sha256": "ef0ddfd5dcf5eeb44dd54966982ac235f8306aa7ad1203488e2265cd7d3afa8b",
       "icon": "storefront",
       "categories": [
         "购物"
@@ -82,7 +82,7 @@
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-light.png",
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png"
       ],
-      "changelog": "新增独立开关的后台消息检查、系统通知与商城导航角标，首次仅建基线并按服务端时间去重。举报详情支持选择、私密预览、上传进度与取消。补齐四语清单与任务文案；升级需确认新增后台、通知权限，并使用支持 fileAttachments、manifestLocalization 的宿主。此版本与 GitHub Release 均为预览渠道。",
+      "changelog": "增加后台消息提醒、私密举报证据与四语界面；修复账号隔离升级后旧待完成订单的恢复，保留原提交号并阻止冲突覆盖。需更新至支持 accountDataMigration 的宿主。新增后台和通知权限仍需确认；此版本为预览渠道。",
       "requiredFeatures": [
         "confirmationDialog",
         "virtualGrid",
@@ -104,7 +104,8 @@
         "navigationBadge",
         "navigationEntries",
         "notificationStatus",
-        "manifestLocalization"
+        "manifestLocalization",
+        "accountDataMigration"
       ],
       "locales": {
         "en": {
