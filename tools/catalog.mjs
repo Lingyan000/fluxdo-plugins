@@ -88,6 +88,11 @@ export function validatePackage(bytes, entry) {
     assert.equal(manifest.auth, undefined, 'API 2 使用 permissions 声明公共能力');
   }
   const features = requiredFeatures(manifest.requiredFeatures);
+  if (features.includes('accountDataMigration')) {
+    assert.ok(manifest.permissions?.identity && (manifest.permissions?.forum?.length ||
+      manifest.tasks?.length || manifest.permissions?.notifications || features.includes('navigationBadge')),
+    '账号数据迁移需要 identity 和账号分区能力');
+  }
   if(manifest.locales!==undefined){
     assert.ok(features.includes('manifestLocalization'),'清单翻译须声明 manifestLocalization');
     const fields={name:40,...(manifest.description!==undefined?{description:200}:{})};
