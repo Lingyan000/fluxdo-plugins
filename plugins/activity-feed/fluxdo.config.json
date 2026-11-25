@@ -3,5 +3,8 @@
     "baseLocale": "zh",
     "script": "src/main.js",
     "ui": "src/ui.rfwtxt"
-  }
+  },
+  "runtimeHelpers": [
+    "data"
+  ]
 }

@@ -1,0 +1,60 @@
+name: 签署并发布插件
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: plugins 下的目录名
+        required: true
+      preview:
+        description: 作为预览版本发布
+        type: boolean
+        default: true
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts
+      - run: node tools/localize.mjs --check && node --test tools/*.test.mjs
+      - name: Validate requested release
+        id: release
+        env:
+          PLUGIN: ${{ inputs.plugin }}
+        run: |
+          node --input-type=module -e '
+          import fs from "node:fs";
+          const name=process.env.PLUGIN;
+          if(!/^[a-z0-9-]+$/.test(name)||!fs.readdirSync("plugins").includes(name))throw Error("插件目录无效");
+          const manifest=JSON.parse(fs.readFileSync("plugins/"+name+"/plugin.json"));
+          if(!/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/.test(manifest.version))throw Error("版本无效");
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,"tag="+name+"-"+manifest.version+"\n");'
+      - name: Sign release and verify package
+        env:
+          PLUGIN: ${{ inputs.plugin }}
+          SIGNING_KEY: ${{ secrets.PLUGIN_SIGNING_KEY }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          test -n "$SIGNING_KEY"
+          umask 077
+          printf '%s' "$SIGNING_KEY" > "$RUNNER_TEMP/plugin-key.pem"
+          trap 'rm -f "$RUNNER_TEMP/plugin-key.pem"' EXIT
+          node tools/package.mjs "plugins/$PLUGIN" "artifacts/$TAG.fluxplugin" --key "$RUNNER_TEMP/plugin-key.pem"
+          cd artifacts && sha256sum "$TAG.fluxplugin" > SHA256SUMS.txt
+      - name: Create immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          PREVIEW: ${{ inputs.preview }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then echo '版本已存在，拒绝覆盖'; exit 1; fi
+          args=()
+          if [ "$PREVIEW" = true ]; then args+=(--prerelease); fi
+          gh release create "$TAG" "artifacts/$TAG.fluxplugin" artifacts/SHA256SUMS.txt --target "$GITHUB_SHA" --title "$TAG" --generate-notes "${args[@]}"

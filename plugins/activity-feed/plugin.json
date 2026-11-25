@@ -2,7 +2,7 @@
   "schema": 12,
   "apiVersion": 2,
   "id": "community.fluxdo.activity",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "name": "动态订阅",
   "author": "FluxDO 社区",
   "description": "按名单聚合论坛动态，保留最近记录并提醒未读。",
@@ -24,7 +24,8 @@
     "notificationStatus",
     "hostEnvironment",
     "pageChrome",
-    "manifestLocalization"
+    "manifestLocalization",
+    "storageScopes"
   ],
   "permissions": {
     "network": [],
@@ -135,5 +136,11 @@
       "pages.bulk.title": "批量導入訂閲",
       "tasks.refresh.title": "更新訂閲動態"
     }
+  },
+  "storage": {
+    "default": "account",
+    "scopes": [
+      "account"
+    ]
   }
 }

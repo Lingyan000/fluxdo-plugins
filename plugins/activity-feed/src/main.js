@@ -3,6 +3,8 @@
   const key = 'subscriptions.v1', maxUsers = 50, keep = 200;
   const labels = {topics:'发帖', replies:'回复', likes:'赞', reactions:'回应', boosts:'Boost'};
   const views = new Map();
+  const profiles=fluxdoData.createQueryClient({maxEntries:50,maxBytes:262144});
+  async function profile(api,name){const user=await api.user.get();profiles.setIdentity(user?.id??user?.username??null);return profiles.query(name.toLowerCase(),()=>api.forum.read({resource:'user',username:name}),{ttl:60000});}
   const empty = () => ({users:[], feed:{}, serial:0, cursor:0});
   const state = async api => (await api.storage.get(key)) || empty();
   const identity = name => name.toLowerCase();
@@ -39,6 +41,7 @@
     catch (error) { if (error.message === 'task_development_preview_only') return fallback; throw error; }
   }
   async function access(ctx, names) {
+    names=[...new Set(['identity',...names])];
     const status = await ctx.api.permissions.status();
     const missing = names.filter(name => !status[name]);
     if (!missing.length || await ctx.api.permissions.request(missing)) return true;
@@ -225,7 +228,10 @@
       scheduled=(await previewFallback(ctx.api.tasks.list(), [])).find(t=>t.id==='refresh');
       if(grants.notifications)notification=await previewFallback(ctx.api.notifications.status(),notification);
       notify=!!grants.notifications && notification.authorized;
-    } catch(e) { if(e.message!=='forum_auth_required')throw e; s=empty(); v.error='请先登录 FluxDO 论坛账号，再添加订阅。'; }
+    } catch(e) {
+      if(!['forum_auth_required','permission_denied:identity'].includes(e.message))throw e;
+      s=empty();v.error ||= e.message==='forum_auth_required'?'请先登录 FluxDO 论坛账号，再添加订阅。':feedback(e);
+    }
     if(v.seq!==seq) return;
     if(!s.users.some(u=>u.name===v.who)) v.who='';
     const saved=rows(s), merged=new Map((v.history?[...v.history.values()]:[]).filter(row=>s.users.some(u=>u.id===row.owner)).map(row=>[row.owner+':'+row.id,row]));
@@ -270,9 +276,9 @@
   });
   for(const event of ['page.resume','card.load','card.refresh','task.updated']) fluxdo.on(event,ctx=>{local(ctx).hidden=false;return render(ctx);});
   on('page.open',async(ctx,_,v)=>{if(ctx.page==='following')await loadFollowing(ctx,v);});
-  fluxdo.on('surface.close',ctx=>{views.delete(ctx.surface);});
+  fluxdo.on('surface.close',ctx=>{views.get(ctx.surface)?.followingPager?.dispose();views.delete(ctx.surface);});
   fluxdo.on('task.run',(ctx,args)=>args.id==='refresh'?refresh(ctx.api,null,{background:!!args.background}):undefined);
-  fluxdo.on('page.hide',ctx=>{local(ctx).hidden=true;});
+  fluxdo.on('page.hide',ctx=>{const v=local(ctx);v.hidden=true;v.followingPager?.cancel();});
   fluxdo.on('card.hide',ctx=>{local(ctx).hidden=true;});
   fluxdo.on('feed',ctx=>ctx.api.navigate('feed'));
   fluxdo.on('manage',ctx=>ctx.api.navigate('settings'));
@@ -289,7 +295,7 @@
     const users=[];
     for(const name of fresh){
       await reserve(ctx.api,true,()=>!v.hidden&&views.get(ctx.surface)===v);
-      const user=await ctx.api.forum.read({resource:'user',username:name});if(!valid(user.username))throw Error('没有找到这个用户');users.push(user);
+      const user=await profile(ctx.api,name);if(!valid(user.username))throw Error('没有找到这个用户');users.push(user);
     }
     const {value:count}=await edit(ctx.api,s=>{let count=0;for(const user of users)if(add(s,user.username,user.avatarUrl))count++;return count;});
     v.bulk='';await ctx.api.toast('已导入 '+count+' 位订阅');await ctx.api.navigation.dismiss();
@@ -304,7 +310,7 @@
   onSubmit('add',async(ctx,a,v)=>{
     const name=String(a.value||v.input).trim().replace(/^@/,''); if(!valid(name)) throw new Error('请输入有效的论坛用户名');
     if(!await access(ctx,['forumProfiles','forumActivity']))return;
-    const user=await ctx.api.forum.read({resource:'user',username:name});
+    const user=await profile(ctx.api,name);
     if(!(await edit(ctx.api,s=>add(s,user.username,user.avatarUrl))).value) throw new Error('该用户已在名单中，或已达 50 人上限');
     v.input=''; ctx.setData('input',''); await finishAdd(ctx,user.username,`已订阅 ${user.username}`);
   });
@@ -312,16 +318,21 @@
   on('import',async ctx=>{if(await access(ctx,['identity','forumFollowing']))await ctx.api.navigate('following');});
   async function loadFollowing(ctx,v,more=false){
     if(v.candidatesLoading || (more && v.next==null))return;
-    v.candidatesLoading=true;v.candidatesError='';ctx.setData('candidatesLoading',true);
+    v.candidatesError='';v.retryMore=more;
     try {
-      const account=await ctx.api.user.get(); if(!account)throw Error('forum_auth_required');
-      const offset=more?v.next:0;
-      const page=await ctx.api.forum.read({resource:'following',username:account.username,offset});
-      const users=new Map((more?v.candidates:[]).map(u=>[identity(u.username),u]));
-      for(const user of page.items)if(valid(user.username))users.set(identity(user.username),user);
-      v.candidates=[...users.values()];v.chosen??=new Map();v.next=page.nextOffset>offset?page.nextOffset:null;
-    } catch (error) { v.candidatesError=feedback(error); v.retryMore=more; }
-    finally { v.candidatesLoading=false; }
+      const account=await ctx.api.user.get();if(!account)throw Error('forum_auth_required');
+      v.followingPager??=fluxdoData.createPagedList({
+        itemKey:user=>identity(user.username),
+        load:async({cursor,identity:owner})=>{
+          const offset=cursor??0;
+          const page=await ctx.api.forum.read({resource:'following',username:owner,offset});
+          return {items:page.items.filter(user=>valid(user.username)),nextCursor:page.nextOffset>offset?page.nextOffset:null};
+        },
+        onChange:state=>{if(views.get(ctx.surface)!==v)return;v.candidatesLoading=state.loading||state.loadingMore;v.candidates=state.items;v.next=state.nextCursor;ctx.setData('candidatesLoading',v.candidatesLoading);}
+      });
+      v.followingPager.reset(account.username);v.chosen??=new Map();
+      await v.followingPager.load({more});
+    }catch(error){if(error.name!=='QueryCancelledError')v.candidatesError=feedback(error);}
   }
   on('candidates',async(ctx,a,v)=>{if(await access(ctx,['identity','forumFollowing']))await loadFollowing(ctx,v,a.retry?!!v.retryMore:!!a.more);});
   on('query',async(_,a,v)=>{v.query=String(a.value||'');});

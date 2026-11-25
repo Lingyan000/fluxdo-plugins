@@ -11,11 +11,142 @@
  function client(api){return {...api,toast:(...args)=>api.toast(...args.map(translate)),dialogs:api.dialogs&&{...api.dialogs,confirm:options=>api.dialogs.confirm(translate(options))},notifications:api.notifications&&{...api.notifications,show:options=>api.notifications.show(translate(options))}};}
  function wrap(ctx){if(typeof ctx.setData!=='function')return {...ctx,api:client(ctx.api)};contexts.set(ctx.surface,ctx);const data=records.get(ctx.surface)||new Map();records.set(ctx.surface,data);ctx.setData('i18n',catalogs[locale]);ctx.setData('pageTitle',data.has('pageTitle')?translate(data.get('pageTitle')):catalogs[locale][titles[ctx.page]]||'');return {...ctx,api:client(ctx.api),setData:(key,value)=>{data.set(key,value);ctx.setData(key,translate(value));}};}
  const fluxdo={...client(host),on:(name,fn)=>host.on(name,async(ctx,args)=>{try{if(ctx.api.host?.environment)await (localeTask??=environment(ctx.api).catch(()=>{}));if(name==='page.resume'||name==='card.resume'){await environment(ctx.api);const source=contexts.get(ctx.surface);if(source)for(const [key,value]of records.get(ctx.surface)||[])source.setData(key,translate(value));}return await fn(wrap(ctx),args);}finally{if(name==='surface.close'){contexts.delete(ctx.surface);records.delete(ctx.surface);}}})};
- (() => {
+ const fluxdoData=(()=>{/** 查询工具只调度调用方提供的读取函数；不会重试或推断业务写操作。 */
+class QueryCancelledError extends Error {
+  constructor() { super('query_cancelled'); this.name = 'QueryCancelledError'; }
+}
+const copy = value => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+function keyOf(value) {
+  function normalize(v) {
+    if (Array.isArray(v)) return v.map(normalize);
+    if (v && typeof v === 'object') return Object.fromEntries(Object.keys(v).sort().map(k => [k, normalize(v[k])]));
+    if (v === null || ['string','boolean'].includes(typeof v) || typeof v === 'number' && Number.isFinite(v)) return v;
+    throw new TypeError('query_key_invalid');
+  }
+  return JSON.stringify(normalize(value));
+}
+function options(ttl, tags) {
+  if (!Number.isFinite(ttl) || ttl < 0 || !Array.isArray(tags) || tags.some(tag => typeof tag !== 'string')) throw new TypeError('query_options_invalid');
+}
+function notify(callback, ...args) {
+  // 观察者报错不改变请求的成功状态，也不让加载标记卡住。
+  try { callback(...args); } catch (error) { console.error('data_observer_failed', String(error?.message ?? error)); }
+}
+
+function createQueryClient({identity = null, maxEntries = 64, maxBytes = 2 * 1024 * 1024, now = () => Date.now()} = {}) {
+  if (!Number.isInteger(maxEntries) || maxEntries < 1 || maxEntries > 1024 || !Number.isInteger(maxBytes) || maxBytes < 1) throw new TypeError('query_limits_invalid');
+  const entries = new Map(), listeners = new Set();
+  let generation = 0, disposed = false, currentIdentity = keyOf(identity), bytes = 0;
+  function alive() { if (disposed) throw new QueryCancelledError(); }
+  function state(entry) { return entry ? {data: copy(entry.data), loading: !!entry.pending, error: entry.error, stale: entry.expires <= now()} : {data: undefined, loading: false, error: null, stale: true}; }
+  function emit(key, entry) { for (const listener of [...listeners]) notify(listener, copy(key), state(entry)); }
+  function remove(id) { const entry = entries.get(id); if (entry) { entry.revision++; bytes -= entry.bytes; entries.delete(id); } }
+  function clear() { generation++; entries.clear(); bytes = 0; }
+  function entryFor(key) {
+    const id = keyOf(key); let entry = entries.get(id);
+    if (!entry) {
+      while (entries.size >= maxEntries) remove(entries.keys().next().value);
+      entry = {key: copy(key), revision: 0, data: undefined, bytes: 0, expires: 0, error: null, pending: null, tags: []};
+    }
+    entries.delete(id); entries.set(id, entry); return [id, entry];
+  }
+  function save(id, entry, data, ttl) {
+    const serialized = JSON.stringify(data);
+    if (serialized === undefined) throw new TypeError('query_data_invalid');
+    // UTF-16 字符的 UTF-8 最多三个字节，以保守上限限制内存。
+    const size = serialized.length * 3;
+    if (size > maxBytes) throw new Error('query_cache_limit');
+    while (bytes - entry.bytes + size > maxBytes) {
+      const victim = [...entries.keys()].find(k => k !== id);
+      if (victim === undefined) break;
+      remove(victim);
+    }
+    bytes += size - entry.bytes; entry.bytes = size; entry.data = JSON.parse(serialized); entry.expires = now() + ttl;
+  }
+  return {
+    peek(key) { alive(); return state(entries.get(keyOf(key))); },
+    query(key, load, {ttl = 0, force = false, tags = []} = {}) {
+      alive(); options(ttl, tags);
+      const [id, entry] = entryFor(key);
+      if (!force && entry.pending) return entry.pending;
+      if (!force && entry.data !== undefined && entry.expires > now()) return Promise.resolve(copy(entry.data));
+      const revision = ++entry.revision, epoch = generation;
+      const active = () => !disposed && epoch === generation && entries.get(id) === entry && revision === entry.revision;
+      entry.tags = [...new Set(tags)]; entry.error = null;
+      const pending = Promise.resolve().then(() => { if (!active()) throw new QueryCancelledError(); return load({isCurrent: active}); }).then(value => {
+        if (!active()) throw new QueryCancelledError(); save(id, entry, value, ttl); return copy(entry.data);
+      }, error => { if (!active()) throw new QueryCancelledError(); throw error; }).catch(error => {
+        if (active()) entry.error = String(error?.message ?? error); throw error;
+      }).finally(() => { if (active()) { entry.pending = null; emit(key, entry); } });
+      entry.pending = pending; emit(key, entry); return pending;
+    },
+    update(key, update, {ttl = 0, tags = []} = {}) {
+      alive(); options(ttl, tags); const [id, entry] = entryFor(key);
+      const value = update(copy(entry.data));
+      save(id, entry, value, ttl); entry.revision++; entry.pending = null; entry.error = null; entry.tags = [...new Set(tags)]; emit(key, entry);
+    },
+    invalidate({key, tags} = {}) {
+      alive(); if (tags !== undefined) options(0, tags);
+      const target = key === undefined ? null : keyOf(key);
+      for (const [id, entry] of entries) {
+        if (target !== null ? target !== id : tags && !entry.tags.some(tag => tags.includes(tag))) continue;
+        entry.revision++; entry.pending = null; entry.expires = 0; emit(entry.key, entry);
+      }
+    },
+    subscribe(listener) { alive(); listeners.add(listener); return () => listeners.delete(listener); },
+    setIdentity(value) {
+      alive(); const next = keyOf(value); if (next === currentIdentity) return;
+      currentIdentity = next; const keys = [...entries.values()].map(e => e.key); clear();
+      for (const key of keys) emit(key, null);
+    },
+    clear() { alive(); const keys = [...entries.values()].map(e => e.key); clear(); for (const key of keys) emit(key, null); },
+    dispose() { if (!disposed) { clear(); listeners.clear(); disposed = true; } },
+  };
+}
+
+/** 页面自己的分页控制器；离页或筛选变化后不再接收旧请求。 */
+function createPagedList({load, itemKey, onChange = () => {}}) {
+  let identity = null, revision = 0, pending = null, disposed = false;
+  let state = {items: [], nextCursor: null, loaded: false, loading: false, loadingMore: false, error: null};
+  function emit() { notify(onChange, copy(state)); }
+  function cancel() { revision++; pending = null; state.loading = false; state.loadingMore = false; }
+  const api = {
+    get state() { return copy(state); },
+    reset(value) { if (disposed) throw new QueryCancelledError(); const next = keyOf(value); if (identity === next) return; cancel(); identity = next; state = {items: [], nextCursor: null, loaded: false, loading: false, loadingMore: false, error: null}; emit(); },
+    load({more = false} = {}) {
+      if (disposed) return Promise.reject(new QueryCancelledError());
+      if (pending) return pending;
+      if (more && (!state.loaded || state.nextCursor === null)) return Promise.resolve(api.state);
+      const current = ++revision, cursor = more ? state.nextCursor : null;
+      const active = () => !disposed && revision === current;
+      state.loading = !more; state.loadingMore = more; state.error = null;
+      pending = Promise.resolve().then(() => { if (!active()) throw new QueryCancelledError(); return load({cursor, identity: identity === null ? null : JSON.parse(identity), isCurrent: active}); }).then(page => {
+        if (!active()) throw new QueryCancelledError();
+        if (!page || !Array.isArray(page.items) || !('nextCursor' in page)) throw new TypeError('pagination_result_invalid');
+        const rows = new Map((more ? state.items : []).map(item => [keyOf(itemKey(item)), item]));
+        for (const item of page.items) rows.set(keyOf(itemKey(item)), copy(item));
+        const next = more && keyOf(page.nextCursor) === keyOf(cursor) ? null : copy(page.nextCursor);
+        state.items = [...rows.values()]; state.loaded = true; state.nextCursor = next;
+      }, error => { if (!active()) throw new QueryCancelledError(); throw error; }).catch(error => {
+        if (active()) state.error = String(error?.message ?? error); throw error;
+      }).finally(() => { if (active()) { pending = null; state.loading = false; state.loadingMore = false; emit(); } }).then(() => api.state);
+      emit(); return pending;
+    },
+    update(update) { if (disposed) throw new QueryCancelledError(); const items = copy(update(copy(state.items))); if (!Array.isArray(items)) throw new TypeError('pagination_items_invalid'); cancel(); state.items = items; emit(); },
+    cancel() { if (!disposed) { cancel(); emit(); } },
+    dispose() { cancel(); disposed = true; },
+  };
+  return api;
+}
+
+return {createQueryClient,createPagedList,QueryCancelledError};})();
+(() => {
   'use strict';
   const key = 'subscriptions.v1', maxUsers = 50, keep = 200;
   const labels = {topics:__text("s6549258dde9de9a1"), replies:__text("scf945e21ddefbb46"), likes:__text("s9c0d90f768909594"), reactions:__text("s9b51d9f4064fb64f"), boosts:'Boost'};
   const views = new Map();
+  const profiles=fluxdoData.createQueryClient({maxEntries:50,maxBytes:262144});
+  async function profile(api,name){const user=await api.user.get();profiles.setIdentity(user?.id??user?.username??null);return profiles.query(name.toLowerCase(),()=>api.forum.read({resource:'user',username:name}),{ttl:60000});}
   const empty = () => ({users:[], feed:{}, serial:0, cursor:0});
   const state = async api => (await api.storage.get(key)) || empty();
   const identity = name => name.toLowerCase();
@@ -52,6 +183,7 @@
     catch (error) { if (error.message === 'task_development_preview_only') return fallback; throw error; }
   }
   async function access(ctx, names) {
+    names=[...new Set(['identity',...names])];
     const status = await ctx.api.permissions.status();
     const missing = names.filter(name => !status[name]);
     if (!missing.length || await ctx.api.permissions.request(missing)) return true;
@@ -238,7 +370,10 @@
       scheduled=(await previewFallback(ctx.api.tasks.list(), [])).find(t=>t.id==='refresh');
       if(grants.notifications)notification=await previewFallback(ctx.api.notifications.status(),notification);
       notify=!!grants.notifications && notification.authorized;
-    } catch(e) { if(e.message!=='forum_auth_required')throw e; s=empty(); v.error=__text("s6170ff9554cef64c"); }
+    } catch(e) {
+      if(!['forum_auth_required','permission_denied:identity'].includes(e.message))throw e;
+      s=empty();v.error ||= e.message==='forum_auth_required'?__text("s6170ff9554cef64c"):feedback(e);
+    }
     if(v.seq!==seq) return;
     if(!s.users.some(u=>u.name===v.who)) v.who='';
     const saved=rows(s), merged=new Map((v.history?[...v.history.values()]:[]).filter(row=>s.users.some(u=>u.id===row.owner)).map(row=>[row.owner+':'+row.id,row]));
@@ -283,9 +418,9 @@
   });
   for(const event of ['page.resume','card.load','card.refresh','task.updated']) fluxdo.on(event,ctx=>{local(ctx).hidden=false;return render(ctx);});
   on('page.open',async(ctx,_,v)=>{if(ctx.page==='following')await loadFollowing(ctx,v);});
-  fluxdo.on('surface.close',ctx=>{views.delete(ctx.surface);});
+  fluxdo.on('surface.close',ctx=>{views.get(ctx.surface)?.followingPager?.dispose();views.delete(ctx.surface);});
   fluxdo.on('task.run',(ctx,args)=>args.id==='refresh'?refresh(ctx.api,null,{background:!!args.background}):undefined);
-  fluxdo.on('page.hide',ctx=>{local(ctx).hidden=true;});
+  fluxdo.on('page.hide',ctx=>{const v=local(ctx);v.hidden=true;v.followingPager?.cancel();});
   fluxdo.on('card.hide',ctx=>{local(ctx).hidden=true;});
   fluxdo.on('feed',ctx=>ctx.api.navigate('feed'));
   fluxdo.on('manage',ctx=>ctx.api.navigate('settings'));
@@ -302,7 +437,7 @@
     const users=[];
     for(const name of fresh){
       await reserve(ctx.api,true,()=>!v.hidden&&views.get(ctx.surface)===v);
-      const user=await ctx.api.forum.read({resource:'user',username:name});if(!valid(user.username))throw Error(__text("sc55916f90438e6a5"));users.push(user);
+      const user=await profile(ctx.api,name);if(!valid(user.username))throw Error(__text("sc55916f90438e6a5"));users.push(user);
     }
     const {value:count}=await edit(ctx.api,s=>{let count=0;for(const user of users)if(add(s,user.username,user.avatarUrl))count++;return count;});
     v.bulk='';await ctx.api.toast(__text("s2a9010137d7ba142")+count+__text("s5da6a920da32d60e"));await ctx.api.navigation.dismiss();
@@ -317,7 +452,7 @@
   onSubmit('add',async(ctx,a,v)=>{
     const name=String(a.value||v.input).trim().replace(/^@/,''); if(!valid(name)) throw new Error(__text("s6648820f4718cc24"));
     if(!await access(ctx,['forumProfiles','forumActivity']))return;
-    const user=await ctx.api.forum.read({resource:'user',username:name});
+    const user=await profile(ctx.api,name);
     if(!(await edit(ctx.api,s=>add(s,user.username,user.avatarUrl))).value) throw new Error(__text("s9036f7a90822785f"));
     v.input=''; ctx.setData('input',''); await finishAdd(ctx,user.username,__text("se61422d7bac5e99f", [user.username]));
   });
@@ -325,16 +460,21 @@
   on('import',async ctx=>{if(await access(ctx,['identity','forumFollowing']))await ctx.api.navigate('following');});
   async function loadFollowing(ctx,v,more=false){
     if(v.candidatesLoading || (more && v.next==null))return;
-    v.candidatesLoading=true;v.candidatesError='';ctx.setData('candidatesLoading',true);
+    v.candidatesError='';v.retryMore=more;
     try {
-      const account=await ctx.api.user.get(); if(!account)throw Error('forum_auth_required');
-      const offset=more?v.next:0;
-      const page=await ctx.api.forum.read({resource:'following',username:account.username,offset});
-      const users=new Map((more?v.candidates:[]).map(u=>[identity(u.username),u]));
-      for(const user of page.items)if(valid(user.username))users.set(identity(user.username),user);
-      v.candidates=[...users.values()];v.chosen??=new Map();v.next=page.nextOffset>offset?page.nextOffset:null;
-    } catch (error) { v.candidatesError=feedback(error); v.retryMore=more; }
-    finally { v.candidatesLoading=false; }
+      const account=await ctx.api.user.get();if(!account)throw Error('forum_auth_required');
+      v.followingPager??=fluxdoData.createPagedList({
+        itemKey:user=>identity(user.username),
+        load:async({cursor,identity:owner})=>{
+          const offset=cursor??0;
+          const page=await ctx.api.forum.read({resource:'following',username:owner,offset});
+          return {items:page.items.filter(user=>valid(user.username)),nextCursor:page.nextOffset>offset?page.nextOffset:null};
+        },
+        onChange:state=>{if(views.get(ctx.surface)!==v)return;v.candidatesLoading=state.loading||state.loadingMore;v.candidates=state.items;v.next=state.nextCursor;ctx.setData('candidatesLoading',v.candidatesLoading);}
+      });
+      v.followingPager.reset(account.username);v.chosen??=new Map();
+      await v.followingPager.load({more});
+    }catch(error){if(error.name!=='QueryCancelledError')v.candidatesError=feedback(error);}
   }
   on('candidates',async(ctx,a,v)=>{if(await access(ctx,['identity','forumFollowing']))await loadFollowing(ctx,v,a.retry?!!v.retryMore:!!a.more);});
   on('query',async(_,a,v)=>{v.query=String(a.value||'');});

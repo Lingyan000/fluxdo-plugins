@@ -88,8 +88,17 @@ export function validatePackage(bytes, entry) {
     assert.equal(manifest.auth, undefined, 'API 2 使用 permissions 声明公共能力');
   }
   const features = requiredFeatures(manifest.requiredFeatures);
+  assert.ok((manifest.pages?.length??0)<=(features.includes('extendedPages')?32:16),'页面数量超过已声明能力');
+  if(manifest.storage!==undefined){
+    const storage=manifest.storage;
+    assert.ok(manifest.schema>=12 && manifest.apiVersion===2 && features.includes('storageScopes'));
+    assert.ok(storage && typeof storage==='object' && !Array.isArray(storage) && Object.keys(storage).every(k=>['default','scopes'].includes(k)));
+    assert.ok(Array.isArray(storage.scopes) && storage.scopes.length>=1 && storage.scopes.length<=2 && new Set(storage.scopes).size===storage.scopes.length);
+    assert.ok(storage.scopes.every(s=>['shared','account'].includes(s)) && storage.scopes.includes(storage.default));
+    assert.ok(!storage.scopes.includes('account') || manifest.permissions?.identity===true);
+  }
   if (features.includes('accountDataMigration')) {
-    assert.ok(manifest.permissions?.identity && (manifest.permissions?.forum?.length ||
+    assert.ok(manifest.permissions?.identity && (manifest.storage ? manifest.storage.scopes.includes('account') : manifest.permissions?.forum?.length ||
       manifest.tasks?.length || manifest.permissions?.notifications || features.includes('navigationBadge')),
     '账号数据迁移需要 identity 和账号分区能力');
   }

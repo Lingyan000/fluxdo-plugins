@@ -1,5 +1,7 @@
 // 每个页面独立保存筛选和分页，晚到的请求不能覆盖新筛选的结果。
 const api = 'https://api2.ldspro.qzz.io/api/shop';
+const publicQueries = fluxdoData.createQueryClient({maxEntries:32,maxBytes:262144});
+const accountQueries = fluxdoData.createQueryClient({maxEntries:32,maxBytes:1048576});
 // 士多协议由插件实现，宿主提供网络、凭证、Connect 与收银台。
 const ldStore = (() => {
   const site = 'https://ldcstore.com';
@@ -490,6 +492,7 @@ fluxdo.on('stream.event',(ctx,args)=>{
     owner.ctx.api.streams.close('notifications').catch(()=>{});
     waitNotificationRetry(delay);return;
   }
+  if(args.event==='buy-message.created')return updateChatViews();
   if(args.event==='summary.updated')setNotificationSummary(value);
   if(args.event==='system-message.changed')return updateMessageViews().catch(()=>{});
 });
@@ -583,6 +586,7 @@ function invalidateViews(except, affected=()=>true) {
   }
 }
 function orderChanged(order,except) {
+  accountQueries.invalidate({tags:['product']});
   const no=order?.orderNo || order?.order_no;
   // 已加载列表直接替换该笔订单，保留分页与滚动；再次兑换时由详情和核价重新检查资格。
   for(const s of views.values()) {
@@ -605,6 +609,8 @@ function refreshView(ctx) {
   if (ctx.page === 'order' || ctx.page === 'orders') return loadOrders(ctx,false);
   if (ctx.page === 'review' || ctx.page === 'product') return detail(ctx);
   if (ctx.page === 'account' || ctx.page == null) return loadOverview(ctx);
+  if(ctx.page==='chat')return syncChat(ctx,{initial:true});
+  if(ctx.page==='chats')return loadConversations(ctx);
   if (ctx.page === 'messages') return loadMessages(ctx,false);
   if(s.categoriesDirty){s.categoriesDirty=false;return Promise.all([categories(ctx),load(ctx,false)]);}
   return load(ctx,false);
@@ -695,7 +701,12 @@ async function categories(ctx) {
   const base = [{id:'',name:'全部'}];
   if (!s.categories) {s.categories = base; showFilters(ctx,s);}
   try {
-    const data = await readPublic('/categories');
+    const auth=await ldStore.status(),queries=auth.authorized?accountQueries:publicQueries;
+    const data = await queries.query('categories',async()=>{
+      const data=await readPublic('/categories',auth);
+      if(!Array.isArray(data.categories))throw Error('分类数据格式有误');
+      return data;
+    },{ttl:300000,tags:['categories']});
     if (!current()) return;
     s.categories = base.concat(data.categories.map(c => ({id:String(c.id),name:c.name})));
     showFilters(ctx,s);ctx.setData('categoryMessage','');
@@ -721,7 +732,7 @@ async function detail(ctx) {
     }
     let productData;
     const path = '/products/' + encodeURIComponent(ctx.params.id);
-    try {productData = await read(path,auth.authorized);}
+    try {productData = await accountQueries.query([path,auth.authorized],()=>read(path,auth.authorized),{tags:['product']});}
     catch (e) {
       if (!auth.authorized || e.status !== 401 || seq !== s.seq || market(ctx) !== s) throw e;
       auth.authorized = false;
@@ -1117,6 +1128,7 @@ function accountAvatar(user) {
 }
 let identityRevision=0,identityTask=null,identityValue=null,identitySigningOut=false;
 function clearAccountIdentity() {
+  accountQueries.clear();
   identityRevision++;identityTask=null;identityValue=null;
   publishAccountIdentity({authorized:false,accountName:'',accountAvatar:'',accountMeta:''});
 }
@@ -1234,6 +1246,8 @@ fluxdo.on('page.open',ctx => {
     s.catName=source.catName;s.sortName=source.sortName;showFilters(ctx,s);write(ctx,{min:s.min,max:s.max,stock:s.stock});return;
   }
   if(ctx.page==='account'){clearPrivateOverview(ctx,s);return loadOverview(ctx);}
+  if(ctx.page==='chat')return syncChat(ctx,{initial:true});
+  if(ctx.page==='chats')return loadConversations(ctx);
   if(ctx.page==='messages')return loadMessages(ctx,false);
   if (['favorites','coupons','coupon','refund','comment','merchant','reports','report'].includes(ctx.page)) return loadBuyerPage(ctx,false);
   if (ctx.page === 'product') write(ctx,{comments:[],commentStatsReady:false,commentsError:'',commentsMessage:'',commentsMore:false,commentsLoading:false});
@@ -1249,12 +1263,13 @@ fluxdo.on('page.open',ctx => {
   loadAccountIdentity(ctx).catch(()=>{});
   return Promise.all([categories(ctx),load(ctx,false)]);
 });
-fluxdo.on('surface.close',ctx => {const s=market(ctx);if(s?.poll)clearTimeout(s.poll);if(s?.searchTimer)clearTimeout(s.searchTimer);views.delete(ctx.surface);return syncNotifications();});
+fluxdo.on('surface.close',ctx => {const s=market(ctx);stopChat(s);if(s?.poll)clearTimeout(s.poll);if(s?.searchTimer)clearTimeout(s.searchTimer);views.delete(ctx.surface);return syncNotifications();});
 // 页面暂时被遮住时保留内容、筛选和分页，只收起已展开的交付内容。
 fluxdo.on('page.hide',ctx => {
   const s = market(ctx);
   if (!s) return;
   s.hidden = true;
+  stopChat(s);
   syncNotifications();
   s.visibility++;
   if(s.poll) {clearTimeout(s.poll);s.poll=null;}
@@ -1268,6 +1283,8 @@ fluxdo.on('page.resume',(ctx,args) => {
   const s = market(ctx);
   if (!s) return;
   s.hidden = false;
+  if(ctx.page==='chat')return syncChat(ctx,{initial:!s.chatSession});
+  if(ctx.page==='chats'&&s.chatsDirty){ctx.setData('chatsChanged',false);return loadConversations(ctx);}
   syncNotifications();
   if(ctx.page==='market')loadAccountIdentity(ctx).catch(()=>{});
   if(ctx.page==='messages')syncMessageView(s).catch(()=>{});
@@ -1295,6 +1312,8 @@ fluxdo.on('login',async ctx => {
     else if (['favorites','coupons','coupon','refund','comment','merchant','reports','report'].includes(ctx.page)) await loadBuyerPage(ctx,false);
     else if (ctx.page === 'product' || ctx.page === 'review') await detail(ctx);
     else if(ctx.page==='account')await loadOverview(ctx);
+    else if(ctx.page==='chat')await syncChat(ctx,{initial:true});
+    else if(ctx.page==='chats')await loadConversations(ctx);
     else if(ctx.page==='messages')await loadMessages(ctx,false);
     else if(ctx.page==='market')await refreshView(ctx);
     else ctx.setData('authorized',true);
@@ -1542,7 +1561,7 @@ async function openExternalProduct(ctx) {
 }
 fluxdo.on('buy',openExternalProduct);
 fluxdo.on('retry',ctx => detail(ctx));
-fluxdo.on('refresh',ctx => {ctx.setData('categoryMessage','');loadAccountIdentity(ctx,true).catch(()=>{});return Promise.all([categories(ctx),load(ctx,false)]);});
+fluxdo.on('refresh',ctx => {publicQueries.invalidate({key:'categories'});accountQueries.invalidate({key:'categories'});ctx.setData('categoryMessage','');loadAccountIdentity(ctx,true).catch(()=>{});return Promise.all([categories(ctx),load(ctx,false)]);});
 fluxdo.on('more',ctx => load(ctx,true));
 fluxdo.on('filters',ctx => fluxdo.navigate('filters',{source:ctx.surface}));
 fluxdo.on('applyFilters',async ctx=>{
@@ -1937,6 +1956,7 @@ fluxdo.on('signOut',async ctx=>{
     if(v.ctx.page==='account')clearPrivateOverview(v.ctx,v);
     if(['favorites','coupons','coupon','comment','refund','reports','report'].includes(v.ctx.page))clearBuyerData(v.ctx,v);
     if(['orders','order'].includes(v.ctx.page))clearOrderData(v.ctx,v);
+    if(['chat','chats'].includes(v.ctx.page)){stopChat(v);clearChatData(v.ctx,v);v.rows=[];write(v.ctx,{rows:[],more:false});}
     if(v.ctx.page==='messages'){v.rows=[];v.page=0;v.more=false;v.messagesLoaded=false;v.messagesCheckPending=false;v.messagesChanged=false;write(v.ctx,{rows:[],more:false,unread:false,messagesChanged:false});}
     if(v.ctx.page==='product'){v.comments=[];v.commentsRevision=(v.commentsRevision || 0)+1;v.commentsPage=0;v.commentsLoading=false;write(v.ctx,{comments:[],commentsMore:false,commentsLoading:false,commentStatsReady:false,canComment:false});}
     write(v.ctx,{accountName:'',accountAvatar:'',accountMeta:'',authorized:false,stats:[]});}
@@ -2027,6 +2047,8 @@ fluxdo.on('messagesReadAll',ctx=>buyerAction(ctx,async s=>{
 fluxdo.on('messageOpen',(ctx,a)=>{
   const link=market(ctx)?.rows.find(r=>r.id===a.id)?.link;if(!link)return;
   const relative=link.replace(/^https:\/\/ldcstore\.com(?=\/)/,'');
+  const chat=/^\/buy-request\/([1-9][0-9]{0,19})\?session=([1-9][0-9]{0,19})$/.exec(relative);
+  if(chat)return ctx.api.navigate('chat',{requestId:chat[1],id:chat[2]});
   const match=/^\/(product|coupon|order)\/([A-Za-z0-9_-]{1,256})(?:[?#]|$)/.exec(relative);
   if(match)return fluxdo.navigate(match[1],{[match[1]==='product' ? 'id' : match[1]==='coupon' ? 'token' : 'no']:match[2]});
   if(relative.startsWith('/') && !relative.startsWith('//') && !relative.includes('\\'))return ctx.api.browser.open('https://ldcstore.com'+relative,{mode:'inApp'});
@@ -2121,4 +2143,107 @@ fluxdo.on('evidenceUpload',async ctx=>{
     await loadBuyerPage(ctx,false);
   }catch(error){if(market(ctx)===s)ctx.setData('evidenceError',error.message);}
   finally{if(market(ctx)===s){s.evidenceBusy=false;ctx.setData('evidenceBusy',false);}}
+});
+
+
+// 求购会话协议由插件维护；页面关闭、登录变化或离开前台后拒收旧响应。
+const chatStates={negotiating:'洽谈中',paid_pending_confirm:'已支付',paid:'已支付',closed:'已关闭',cancelled:'已取消'};
+const chatId=value=>/^[1-9][0-9]{0,19}$/.test(String(value??''))?String(value):'';
+function chatCurrent(ctx,s,revision){return market(ctx)===s && !s.hidden && revision===s.chatRevision;}
+function clearChatData(ctx,s){
+  s.chatRows=[];s.chatSession=null;s.chatDraft='';s.chatOrder='';s.chatRead=null;s.chatMore=false;s.chatUncertain=null;
+  write(ctx,{chatRows:[],canSend:false,needsSession:true,authorized:false,chatDraft:'',chatOrder:'',chatState:'',chatMore:false,chatReady:false});
+}
+function showChatMessages(ctx,s){
+  const rows=[...(s.chatRows||[])].sort((a,b)=>storeMillis(a.createdAt)-storeMillis(b.createdAt)||String(a.id).localeCompare(String(b.id),undefined,{numeric:true}));
+  s.chatRows=rows.slice(-500);
+  ctx.setData('chatRows',s.chatRows.map(message=>({id:String(message.id),system:message.senderRole==='system',mine:message.senderRole===s.chatRole,
+    author:display(message.senderPublicUsername)||'参与者',content:display(message.content),time:storeTime(message.createdAt)})));
+}
+async function loadConversations(ctx,more=false){
+  const s=market(ctx);if(!s || s.hidden || (more && (s.loading || !s.more)))return;
+  const revision=s.chatRevision=(s.chatRevision||0)+1,current=()=>chatCurrent(ctx,s,revision),page=more?(s.page||1)+1:1;
+  if(!more && s.chatQuery!==s.search){s.rows=[];s.page=0;s.more=false;}s.chatQuery=s.search;
+  s.loading=true;write(ctx,{loading:!more,loadingMore:more,error:'',needsSession:false,rows:s.rows,more:!!s.more});
+  try{
+    const auth=await ldStore.status();if(!current())return;ctx.setData('authorized',auth.authorized);
+    if(!auth.authorized){s.rows=[];write(ctx,{rows:[],more:false,needsSession:true});return;}
+    const data=await buyerRequest(ctx,'/conversations/my?'+params({type:'buy_request',page,pageSize:20,search:s.search||''}));if(!current())return;
+    const raw=data.conversations??data.sessions;if(!Array.isArray(raw))throw Error('会话数据格式有误');
+    const rows=raw.map(row=>({id:chatId(row.sessionId??row.sourceId??row.id),requestId:chatId(row.requestId??row.request?.id),
+      title:display(row.request?.title)||'求购洽谈',name:display(row.counterpartyPublicUsername),summary:display(row.latestMessage?.content)||'暂无消息',
+      state:chatStates[row.status]||display(row.status),unread:Number(row.unreadCount)>0,time:storeTime(row.lastMessageAt||row.updatedAt||row.createdAt)})).filter(row=>row.id&&row.requestId);
+    s.rows=mergeRows(more?s.rows:[],rows);s.page=page;s.more=hasNextPage(data.pagination,page,raw.length);
+    write(ctx,{rows:s.rows,more:s.more});s.chatsDirty=false;
+  }catch(error){if(current()){if(error.status===401){s.rows=[];write(ctx,{rows:[],needsSession:true,authorized:false});}ctx.setData('error',error.message);}}
+  finally{if(current()){s.loading=false;write(ctx,{loading:false,loadingMore:false});}}
+}
+async function syncChat(ctx,{older=false,initial=false}={}){
+  const s=market(ctx);if(!s || s.hidden || s.chatLoading || s.chatSending || (older&&!s.chatMore))return;
+  const id=chatId(ctx.params.id),requestId=chatId(ctx.params.requestId);if(!id||!requestId)return;
+  const revision=s.chatRevision=(s.chatRevision||0)+1,current=()=>chatCurrent(ctx,s,revision);
+  s.chatLoading=true;write(ctx,{loading:initial&&!s.chatSession,loadingMore:older,error:'',chatError:'',needsSession:false});
+  try{
+    const auth=await ldStore.status();if(!current())return;ctx.setData('authorized',auth.authorized);
+    if(!auth.authorized){clearChatData(ctx,s);return;}
+    if(!s.chatSession||initial){
+      const data=await buyerRequest(ctx,'/buy-sessions/'+id+'?requestId='+requestId);if(!current())return;
+      if(chatId(data.session?.id)!==id || (data.request?.id && chatId(data.request.id)!==requestId))throw Error('会话与请求不符');
+      s.chatSession=data.session;s.chatRole=data.viewerRole??data.session.viewerRole??data.session.role;
+      s.chatOrder=display(data.session.paymentOrderNo||data.order?.orderNo);
+      write(ctx,{pageTitle:display(data.request?.title)||'求购洽谈',chatState:chatStates[data.session.status]||display(data.session.status),
+        canSend:data.session.canSendMessage===true,chatOrder:s.chatOrder});
+    }
+    const previous=s.chatRows||[],q={limit:50};
+    if(older && previous.length)q.beforeId=previous[0].id;
+    else if(!initial && previous.length)q.sinceId=previous.at(-1).id;
+    const data=await buyerRequest(ctx,'/buy-sessions/'+id+'/messages?'+params(q));if(!current())return;
+    if(!Array.isArray(data.messages))throw Error('会话消息格式有误');
+    if(data.messages.some(m=>!chatId(m.id)||(m.sessionId&&chatId(m.sessionId)!==id)))throw Error('会话消息与请求不符');
+    s.chatRows=mergeRows(previous,data.messages.map(m=>({...m,id:String(m.id)})));showChatMessages(ctx,s);
+    if(older||!previous.length)s.chatMore=data.pagination?.hasMoreBefore===true && s.chatRows.length<500;
+    if(data.session){s.chatSession={...s.chatSession,...data.session};s.chatOrder=display(s.chatSession.paymentOrderNo)||s.chatOrder;write(ctx,{canSend:s.chatSession.canSendMessage===true,chatState:chatStates[s.chatSession.status]||display(s.chatSession.status),chatOrder:s.chatOrder});}
+    write(ctx,{chatMore:!!s.chatMore,chatReady:true});s.chatsDirty=false;
+    const latest=chatId(data.pagination?.latestMessageId)||s.chatRows.at(-1)?.id;
+    if(!older&&latest&&s.chatRead!==latest){
+      try{await buyerRequest(ctx,'/buy-sessions/'+id+'/read','POST',{lastReadMessageId:latest});if(current())s.chatRead=latest;}catch(_){/* 已读同步失败不覆盖消息；下次刷新重试。 */}
+    }
+  }catch(error){if(current()){if(error.status===401)clearChatData(ctx,s);ctx.setData('chatError',error.message);}}
+  finally{if(current()){s.chatLoading=false;write(ctx,{loading:false,loadingMore:false});scheduleChat(ctx,s);}}
+}
+function scheduleChat(ctx,s){
+  if(s.chatTimer)clearTimeout(s.chatTimer);s.chatTimer=null;
+  if(typeof setTimeout==='function'&&market(ctx)===s&&!s.hidden&&s.chatSession)s.chatTimer=setTimeout(()=>{s.chatTimer=null;syncChat(ctx);},15000);
+}
+function stopChat(s){if(!s)return;s.chatRevision=(s.chatRevision||0)+1;s.chatLoading=false;s.loading=false;if(s.chatTimer)clearTimeout(s.chatTimer);s.chatTimer=null;}
+async function updateChatViews(){
+  for(const s of views.values()){
+    if(!['chats','chat'].includes(s.ctx?.page))continue;s.chatsDirty=true;
+    if(!s.hidden&&s.ctx.page==='chat')await syncChat(s.ctx);
+    else if(!s.hidden&&s.ctx.page==='chats')s.ctx.setData('chatsChanged',true);
+  }
+}
+fluxdo.on('chats',()=>fluxdo.navigate('chats'));
+fluxdo.on('chatsSearch',(ctx,args)=>{const s=market(ctx);if(s){s.search=String(args.value||'').slice(0,100);ctx.setData('search',s.search);}});
+fluxdo.on('chatsRefresh',ctx=>{ctx.setData('chatsChanged',false);return loadConversations(ctx);});
+fluxdo.on('chatsMore',ctx=>loadConversations(ctx,true));
+fluxdo.on('chatOpen',(ctx,args)=>{const row=market(ctx)?.rows.find(r=>r.id===args.id);if(row)return ctx.api.navigate('chat',{id:row.id,requestId:row.requestId});});
+fluxdo.on('chatRefresh',ctx=>syncChat(ctx,{initial:true}));
+fluxdo.on('chatOlder',ctx=>syncChat(ctx,{older:true}));
+fluxdo.on('chatInput',(ctx,args)=>{const s=market(ctx);if(s){s.chatDraft=String(args.value||'').slice(0,500);ctx.setData('chatDraft',s.chatDraft);}});
+fluxdo.on('chatOrder',ctx=>{const no=market(ctx)?.chatOrder;if(no)return ctx.api.navigate('order',{no});});
+fluxdo.on('chatSend',async ctx=>{
+  const s=market(ctx),id=chatId(ctx.params.id),content=s?.chatDraft?.trim();
+  if(!s||s.hidden||s.chatLoading||s.chatSending||s.chatSession?.canSendMessage!==true||!id||!content||content.length>500)return;
+  const revision=s.chatRevision;s.chatSending=true;write(ctx,{chatSending:true,chatError:''});
+  try{
+    if(s.chatUncertain===content && !await ctx.api.dialogs.confirm({title:'确认重新发送',message:'上次发送结果未确认，请先查看会话是否已收到，避免重复发送。',confirmLabel:'重新发送'}))return;
+    if(!chatCurrent(ctx,s,revision))return;
+    s.chatUncertain=content;
+    const data=await buyerRequest(ctx,'/buy-sessions/'+id+'/messages','POST',{content});if(!chatCurrent(ctx,s,revision))return;
+    if(!chatId(data.message?.id)||(data.message.sessionId&&chatId(data.message.sessionId)!==id))throw Error('发送结果无法确认，请先刷新会话');
+    s.chatRows=mergeRows(s.chatRows||[],[{...data.message,id:String(data.message.id)}]);s.chatDraft='';s.chatUncertain=null;ctx.setData('chatDraft','');showChatMessages(ctx,s);
+    for(const view of views.values())if(view.ctx?.page==='chats'){view.chatsDirty=true;view.ctx.setData('chatsChanged',true);}
+  }catch(error){s.chatUncertain=content;if(chatCurrent(ctx,s,revision))ctx.setData('chatError',error.message||'发送结果无法确认，请先刷新会话');}
+  finally{s.chatSending=false;if(market(ctx)===s){ctx.setData('chatSending',false);scheduleChat(ctx,s);}}
 });
