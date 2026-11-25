@@ -5,14 +5,14 @@
     {
       "id": "community.fluxdo.activity",
       "name": "动态订阅",
-      "version": "1.3.1",
+      "version": "1.4.0",
       "apiVersion": 2,
       "author": "FluxDO 社区",
       "summary": "批量更新订阅与历史分页，从关注或旧名单导入，支持四种语言。",
       "description": "按人、类型和未读筛选发帖、回复、赞、回应与 Boost，点击打开原生话题。每人最多缓存最近 200 条，并受总容量约束；历史通过服务器分页，每段显示最多 400 条，可继续较早记录。可独立开启系统后台更新与通知，系统关闭通知时提供设置入口。手机与宽屏使用自适应布局，卡片显示订阅人数和未读统计。预览为模拟数据。",
       "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.3.1/activity-feed-1.3.1.fluxplugin",
-      "sha256": "1ff72faedb8e1cf7e8866d8ce7609c863d39f5bbdaf11ff476e2083a401675f5",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/activity-feed-1.4.0/activity-feed-1.4.0.fluxplugin",
+      "sha256": "d990fdbe5646597dc9e850af1c2e1b3b980cce90d8473b6e0edf5297fb3d399c",
       "icon": "history",
       "categories": [
         "论坛"
@@ -22,7 +22,7 @@
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.2.0/plugins/activity-feed/previews/mobile-large.png",
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/activity-feed-1.2.0/plugins/activity-feed/previews/desktop-dark.png"
       ],
-      "changelog": "补齐插件名称、页面、导航和任务标题的四语清单；使用通用本地化 CLI，保留原订阅与缓存。需要支持 manifestLocalization 的新 FluxDO。",
+      "changelog": "使用显式账号存储，首次订阅按需申请当前账号和动态权限；拒绝后可再次申请。资料读取合并缓存，关注分页支持取消和迟到结果隔离。增加作者签名，保留原订阅与权限选择。需支持 storageScopes 的宿主。",
       "requiredFeatures": [
         "forumRead",
         "navigationEntries",
@@ -38,7 +38,8 @@
         "notificationStatus",
         "hostEnvironment",
         "pageChrome",
-        "manifestLocalization"
+        "manifestLocalization",
+        "storageScopes"
       ],
       "locales": {
         "en": {
@@ -61,14 +62,14 @@
     {
       "id": "community.fluxdo.ldstore",
       "name": "LD士多",
-      "version": "2.7.1",
+      "version": "2.8.0",
       "apiVersion": 2,
       "author": "FluxDO 社区",
-      "summary": "原生商城、订单与消息，支持后台提醒、举报证据图片与四语界面。",
-      "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
+      "summary": "原生商城、订单、消息与求购洽谈，支持后台提醒和证据附件。",
+      "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。已有求购会话支持历史分页、发送和关联订单。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
       "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.7.1/ld-store-2.7.1.fluxplugin",
-      "sha256": "ef0ddfd5dcf5eeb44dd54966982ac235f8306aa7ad1203488e2265cd7d3afa8b",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.8.0/ld-store-2.8.0.fluxplugin",
+      "sha256": "ff618660e366e97cc5c0868f6a16a451d50c1560e339ebd816635f78eee50378",
       "icon": "storefront",
       "categories": [
         "购物"
@@ -82,7 +83,7 @@
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-light.png",
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png"
       ],
-      "changelog": "增加后台消息提醒、私密举报证据与四语界面；修复账号隔离升级后旧待完成订单的恢复，保留原提交号并阻止冲突覆盖。需更新至支持 accountDataMigration 的宿主。新增后台和通知权限仍需确认；此版本为预览渠道。",
+      "changelog": "新增原生求购洽谈，支持历史消息、发送、已读与关联订单。使用显式账号存储和受限查询缓存；会话失效清空私人信息。发行包增加作者签名；首次确认公钥后保留数据。需支持 storageScopes、extendedPages 的宿主，此版本为预览渠道。",
       "requiredFeatures": [
         "confirmationDialog",
         "virtualGrid",
@@ -105,7 +106,9 @@
         "navigationEntries",
         "notificationStatus",
         "manifestLocalization",
-        "accountDataMigration"
+        "accountDataMigration",
+        "storageScopes",
+        "extendedPages"
       ],
       "locales": {
         "en": {
