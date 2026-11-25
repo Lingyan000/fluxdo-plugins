@@ -81,14 +81,14 @@
     {
       "id": "community.fluxdo.ldstore",
       "name": "LD士多",
-      "version": "2.9.1",
+      "version": "2.9.2",
       "apiVersion": 2,
       "author": "FluxDO 社区",
       "summary": "原生商城、订单、消息与求购洽谈，支持后台提醒和证据附件。",
       "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。已有求购会话支持历史分页、发送和关联订单。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
       "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.9.1/ld-store-2.9.1.fluxplugin",
-      "sha256": "163dedbae6ebef056693b3f6068342382a1d8284023a56aea8bae366b6793226",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.9.2/ld-store-2.9.2.fluxplugin",
+      "sha256": "01b3cfac39952b08cbc1f7c3a3dee84ad7c63bee40d5dad136506753a0435020",
       "icon": "storefront",
       "categories": [
         "购物"
@@ -103,7 +103,7 @@
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png",
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.9.0/plugins/ld-store/previews/chat-light.png"
       ],
-      "changelog": "修复高等级账号无法兑换低等级商品：校验接口未附带等级时，从同账号的有效士多凭证补取，账号页与购买页采用一致规则。等级未知不再误报为 TL0；保留服务端明确返回的等级、库存及其他购买限制。",
+      "changelog": "修复「我的士多」加载时的空白售后入口和多余间距；首次失败用 — 表示未知统计，刷新时保留已有数字。配合新版宿主，加载时保留统计标签并使用等高骨架，避免菜单跳位。包含购买等级修复。",
       "requiredFeatures": [
         "confirmationDialog",
         "virtualGrid",
@@ -137,19 +137,19 @@
           "name": "LD Store",
           "summary": "Browse products, sign in, confirm orders, pay with LDC and view delivery details.",
           "description": "Browse products, sign in, confirm orders, pay with LDC and view delivery details.",
-          "changelog": "Fix eligible accounts being blocked from purchases when verification omits trust level. Account and purchase pages now use valid LD Store credential claims as a fallback. Unknown levels are no longer treated as TL0; explicit server levels and other purchase limits are preserved."
+          "changelog": "Remove the blank after-sales row and extra spacing while My Store loads. Show — for unknown statistics after an initial failure and preserve existing values during refresh. With the updated host, labels stay visible and skeletons match text height to keep the menu in place. Includes the purchase trust-level fix."
         },
         "zh_TW": {
           "name": "LD士多",
           "summary": "瀏覽與搜尋商品，原生登入、確認訂單、使用 LDC 支付並檢視交付內容。",
           "description": "瀏覽與搜尋商品，原生登入、確認訂單、使用 LDC 支付並檢視交付內容。",
-          "changelog": "修復高等級帳號無法兌換低等級商品：校驗介面未附帶等級時，從同帳號的有效士多憑證補取，帳號頁與購買頁採用一致規則。未知等級不再視為 TL0，保留伺服器明確回傳的等級、庫存及其他購買限制。"
+          "changelog": "修復「我的士多」載入時的空白售後入口與多餘間距；首次失敗以 — 表示未知統計，重新整理時保留既有數字。搭配新版宿主，載入時保留統計標籤並使用等高骨架，避免選單跳動。包含購買等級修復。"
         },
         "zh_HK": {
           "name": "LD士多",
           "summary": "瀏覽與搜索商品，原生登錄、確認訂單、使用 LDC 支付並查看交付內容。",
           "description": "瀏覽與搜索商品，原生登錄、確認訂單、使用 LDC 支付並查看交付內容。",
-          "changelog": "修復高等級帳戶無法兌換低等級商品：驗證介面未附帶等級時，從同帳戶的有效士多憑證補取，帳戶頁與購買頁採用一致規則。未知等級不再視為 TL0，保留伺服器明確回傳的等級、庫存及其他購買限制。"
+          "changelog": "修復「我的士多」載入時的空白售後入口及多餘間距；首次失敗以 — 表示未知統計，重新整理時保留已有數字。配合新版宿主，載入時保留統計標籤並使用等高骨架，避免選單跳位。包含購買等級修復。"
         }
       },
       "channel": "preview"
