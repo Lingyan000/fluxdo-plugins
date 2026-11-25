@@ -81,14 +81,14 @@
     {
       "id": "community.fluxdo.ldstore",
       "name": "LD士多",
-      "version": "2.9.2",
+      "version": "2.9.3",
       "apiVersion": 2,
       "author": "FluxDO 社区",
       "summary": "原生商城、订单、消息与求购洽谈，支持后台提醒和证据附件。",
       "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。已有求购会话支持历史分页、发送和关联订单。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
       "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.9.2/ld-store-2.9.2.fluxplugin",
-      "sha256": "01b3cfac39952b08cbc1f7c3a3dee84ad7c63bee40d5dad136506753a0435020",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.9.3/ld-store-2.9.3.fluxplugin",
+      "sha256": "28b1d2c2428a618556108cfd186e756d3a4db0d2cc4340326aad33676d61ae84",
       "icon": "storefront",
       "categories": [
         "购物"
@@ -103,7 +103,7 @@
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png",
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.9.0/plugins/ld-store/previews/chat-light.png"
       ],
-      "changelog": "修复「我的士多」加载时的空白售后入口和多余间距；首次失败用 — 表示未知统计，刷新时保留已有数字。配合新版宿主，加载时保留统计标签并使用等高骨架，避免菜单跳位。包含购买等级修复。",
+      "changelog": "整理商品评论区：统计与评论内容分区留白，无评论时使用独立空态，首次加载显示骨架；翻页加载、错误重试与更多评论不再同时出现，已加载评论保持可见。优化回复间距，评论关闭或没有下一页时停止翻页。",
       "requiredFeatures": [
         "confirmationDialog",
         "virtualGrid",
@@ -137,19 +137,19 @@
           "name": "LD Store",
           "summary": "Browse products, sign in, confirm orders, pay with LDC and view delivery details.",
           "description": "Browse products, sign in, confirm orders, pay with LDC and view delivery details.",
-          "changelog": "Remove the blank after-sales row and extra spacing while My Store loads. Show — for unknown statistics after an initial failure and preserve existing values during refresh. With the updated host, labels stay visible and skeletons match text height to keep the menu in place. Includes the purchase trust-level fix."
+          "changelog": "Separate review statistics from comments with consistent spacing. Empty reviews use a dedicated empty state and initial loading uses skeletons. Pagination, retry and load-more controls now appear one at a time while existing comments stay visible. Improve reply spacing and stop pagination when comments are closed or no pages remain."
         },
         "zh_TW": {
           "name": "LD士多",
           "summary": "瀏覽與搜尋商品，原生登入、確認訂單、使用 LDC 支付並檢視交付內容。",
           "description": "瀏覽與搜尋商品，原生登入、確認訂單、使用 LDC 支付並檢視交付內容。",
-          "changelog": "修復「我的士多」載入時的空白售後入口與多餘間距；首次失敗以 — 表示未知統計，重新整理時保留既有數字。搭配新版宿主，載入時保留統計標籤並使用等高骨架，避免選單跳動。包含購買等級修復。"
+          "changelog": "整理商品評論區：統計與評論內容分區留白，無評論時使用獨立空態，首次載入顯示骨架；翻頁載入、錯誤重試與更多評論不再同時出現，已載入評論保持可見。最佳化回覆間距，評論關閉或沒有下一頁時停止翻頁。"
         },
         "zh_HK": {
           "name": "LD士多",
           "summary": "瀏覽與搜索商品，原生登錄、確認訂單、使用 LDC 支付並查看交付內容。",
           "description": "瀏覽與搜索商品，原生登錄、確認訂單、使用 LDC 支付並查看交付內容。",
-          "changelog": "修復「我的士多」載入時的空白售後入口及多餘間距；首次失敗以 — 表示未知統計，重新整理時保留已有數字。配合新版宿主，載入時保留統計標籤並使用等高骨架，避免選單跳位。包含購買等級修復。"
+          "changelog": "整理商品評論區：統計與評論內容分區留白，沒有評論時使用獨立空態，首次載入顯示骨架；翻頁載入、錯誤重試與更多評論不再同時出現，已載入評論保持可見。改善回覆間距，評論關閉或沒有下一頁時停止翻頁。"
         }
       },
       "channel": "preview"
