@@ -62,6 +62,25 @@
     {
       "id": "community.fluxdo.ldstore",
       "name": "LD士多",
+      "version": "2.0.2",
+      "apiVersion": 2,
+      "author": "FluxDO 社区",
+      "summary": "浏览商品、连接士多账号、使用原生 LDC 收银台并查询订单。",
+      "description": "浏览与搜索商品，原生登录、确认订单、使用 LDC 支付并查看交付内容。",
+      "repository": "https://github.com/Lingyan000/fluxdo-plugins",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.0.2/ld-store-2.0.2.fluxplugin",
+      "sha256": "7c1f7cf51e851f7bc9004da2c247bce911c2b594ddee5429664ad9e39b1bef71",
+      "icon": "storefront",
+      "categories": [
+        "购物"
+      ],
+      "screenshots": [],
+      "changelog": "商品、订单和评论支持上滑自动分页，商品卡片支持同排等高。需要更新 FluxDO 宿主，旧版仍可手动加载更多。",
+      "channel": "stable"
+    },
+    {
+      "id": "community.fluxdo.ldstore",
+      "name": "LD士多",
       "version": "2.9.0",
       "apiVersion": 2,
       "author": "FluxDO 社区",
@@ -134,6 +153,25 @@
         }
       },
       "channel": "preview"
+    },
+    {
+      "id": "community.fluxdo.quicknotes",
+      "name": "随手记",
+      "version": "1.0.0",
+      "apiVersion": 1,
+      "author": "FluxDO 社区",
+      "summary": "在元宇宙中编辑并保留本地备忘。",
+      "description": "保存在设备上的轻量备忘，可在元宇宙中直接编辑。",
+      "repository": "https://github.com/Lingyan000/fluxdo-plugins",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/plugins-2026.11.13/quick-notes-1.0.0.fluxplugin",
+      "sha256": "00b0c24aca14ed3f22befb3afb7b460ff730e3417b205457f6edb79d5a9007aa",
+      "icon": "edit",
+      "categories": [
+        "效率"
+      ],
+      "screenshots": [],
+      "changelog": "首次发布到 GitHub 插件市场。",
+      "channel": "stable"
     },
     {
       "id": "community.fluxdo.quicknotes",

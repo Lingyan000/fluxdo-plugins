@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { test } from 'node:test';
 import {readFileSync} from 'node:fs';
-import { validateEntry, validatePackage, validateRelease } from './catalog.mjs';
+import { validateEntry, validatePackage, validateRelease, validateCatalogTransition } from './catalog.mjs';
 
 const manifest = { schema: 8, apiVersion: 1, id: 'example.plugin', version: '1.0.0', ui: 'ui.rfwtxt', script: 'main.js' };
 const bytes = Buffer.from(JSON.stringify({ manifest, files: { 'ui.rfwtxt': 'import fluxdo; widget Card = Gap();', 'main.js': 'fluxdo.on("card.load", () => {});' } }));
@@ -19,6 +19,17 @@ test('市场渠道必须与 GitHub 发行版预发布标记一致',()=>{
   validateRelease({...entry,channel:'preview'},{...release,prerelease:true});
   assert.throws(()=>validateRelease(entry,{...release,draft:true}));
   assert.throws(()=>validateRelease(entry,{...release,assets:[]}));
+});
+test('发布测试版保留正式条目，撤回需要显式声明', () => {
+  const previous = {plugins: [entry]};
+  const preview = {...entry, version: '2.0.0', channel: 'preview'};
+  validateCatalogTransition(previous, {plugins: [entry, preview]});
+  validateCatalogTransition(previous, {plugins: [{...entry, version: '1.1.0'}, preview]});
+  assert.throws(() => validateCatalogTransition(previous, {plugins: [preview]}), /正式版条目/);
+  assert.throws(() => validateCatalogTransition(previous, {plugins: []}), /正式版条目/);
+  validateCatalogTransition(previous, {plugins: [{...entry, withdrawn: true}, preview]});
+  validateCatalogTransition({plugins: [{...entry, withdrawn: true}]}, {plugins: [preview]});
+  validateCatalogTransition({plugins: [preview]}, {plugins: [preview]});
 });
 test('校验目录与插件包身份', () => {
   validateEntry(entry);

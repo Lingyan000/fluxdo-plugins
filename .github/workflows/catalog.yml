@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -18,6 +20,20 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: node tools/localize.mjs --check
       - run: node --test tools/*.test.mjs
+      - name: 保留独立的正式发行条目
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          node --input-type=module -e '
+          import {execFileSync} from "node:child_process";
+          import {readFileSync} from "node:fs";
+          import {validateCatalogTransition} from "./tools/catalog.mjs";
+          const base=process.env.BASE_SHA;
+          if(base && !/^0+$/.test(base)) {
+            if(!/^[a-f0-9]{40}$/.test(base))throw Error("基准提交无效");
+            const previous=JSON.parse(execFileSync("git",["show",base+":index.json"],{encoding:"utf8"}));
+            validateCatalogTransition(previous,JSON.parse(readFileSync("index.json","utf8")));
+          }'
       - run: node tools/catalog.mjs --check --verify-packages
         env:
           GITHUB_TOKEN: ${{ github.token }}

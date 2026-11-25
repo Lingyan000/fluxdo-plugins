@@ -196,6 +196,16 @@ export function validateRelease(entry, release) {
   assert.ok(release.assets?.some(asset=>asset.browser_download_url===entry.packageUrl), '发行版缺少市场声明的附件');
 }
 
+export function validateCatalogTransition(previous, next) {
+  const stable = entries => entries.filter(entry =>
+    (entry.channel ?? (entry.version.includes('-') ? 'preview' : 'stable')) === 'stable');
+  const current = new Set(stable(next.plugins).map(entry => entry.id));
+  for (const entry of stable(previous.plugins)) {
+    assert.ok(entry.withdrawn || current.has(entry.id),
+      `${entry.id} 的正式版条目不能被测试版替换；撤回时保留正式条目并标记 withdrawn`);
+  }
+}
+
 async function verifyPackage(entry) {
   const url = new URL(entry.packageUrl);
   const parts=url.pathname.split('/');
