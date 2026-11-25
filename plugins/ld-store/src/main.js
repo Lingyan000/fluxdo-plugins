@@ -1189,6 +1189,16 @@ async function loadAccountIdentity(ctx,refresh=false) {
   })();
   identityTask={key,promise};return promise;
 }
+function overviewStatistics(authorized,data=null,unread=null) {
+  if(authorized)return [
+    {label:'待付款',value:data ? display(data.pendingPaymentCount ?? 0) : '—'},
+    {label:'待发货',value:data ? display(data.awaitingDeliveryCount ?? 0) : '—'},
+    {label:'优惠券',value:data ? display(data.unusedCouponCount ?? 0) : '—'},
+    {label:'未读消息',value:data ? display(notificationSummary?.totalUnread ?? unread?.totalUnread ?? 0) : '—'},
+  ];
+  return [{label:'在售商品',value:display(data?.products?.online ?? '—')},
+    {label:'今日订单',value:display(data?.orders?.today ?? '—')},{label:'店铺',value:display(data?.stores ?? '—')}];
+}
 async function loadOverview(ctx) {
   const s=market(ctx);
   write(ctx,{overviewLoading:true,overviewInitialLoading:!s?.overviewLoaded,overviewError:''});
@@ -1196,6 +1206,11 @@ async function loadOverview(ctx) {
   const current=()=>!s || (market(ctx)===s && s.overviewRevision===revision);
   try {
     const auth=await ldStore.status();if(!current())return;ctx.setData('authorized',auth.authorized);
+    if(!s.overviewLoaded || s.overviewAuthorized!==auth.authorized) {
+      s.overviewLoaded=false;s.overviewStats=null;
+      write(ctx,{overviewInitialLoading:true,stats:overviewStatistics(auth.authorized),hasRefundAttention:false,refundHint:'',couponHint:''});
+    }
+    s.overviewAuthorized=auth.authorized;
     if(auth.authorized) {
       const account=await ctx.api.user.get();if(!current())return;
       if(!s.overviewLoaded)ctx.setData('accountName',display(account?.username));
@@ -1207,8 +1222,7 @@ async function loadOverview(ctx) {
       const [raw,unread]=await Promise.all([read('/user/attention',true),read('/messages/unread-summary',true)]);
       const data=normalizeOrderData(raw),unreadData=normalizeOrderData(unread);
       if(!current())return;
-      s.overviewStats=[{label:'待付款',value:display(data.pendingPaymentCount ?? 0)},{label:'待发货',value:display(data.awaitingDeliveryCount ?? 0)},
-        {label:'优惠券',value:display(data.unusedCouponCount ?? 0)},{label:'未读消息',value:display(notificationSummary?.totalUnread ?? unreadData.totalUnread ?? 0)}];
+      s.overviewStats=overviewStatistics(true,data,unreadData);
       ctx.setData('stats',s.overviewStats);
       if(ctx.page==='account') {
         const recent=(data.recentOrders || []).filter(order=>order.orderNo || order.id).map(order=>({no:display(order.orderNo || order.id),title:display(order.productName) || '商品订单',subtitle:[statusLabels[order.status] || '未知状态',order.amount!=null ? money(order.amount) : ''].filter(Boolean).join(' · ')}));
@@ -1216,12 +1230,13 @@ async function loadOverview(ctx) {
         if(s.spendingOpen)await loadSpending(ctx,s);
         if(!current())return;
       }
-      write(ctx,{refundHint:Number(data.refundAttentionCount)>0 ? display(data.refundAttentionCount)+' 笔售后待处理' : '',couponHint:Number(data.expiringCouponCount)>0 ? display(data.expiringCouponCount)+' 张即将到期' : ''});
+      const hasRefundAttention=Number(data.refundAttentionCount)>0;
+      write(ctx,{hasRefundAttention,refundHint:hasRefundAttention ? display(data.refundAttentionCount)+' 笔售后待处理' : '',couponHint:Number(data.expiringCouponCount)>0 ? display(data.expiringCouponCount)+' 张即将到期' : ''});
     } else {
       clearPrivateOverview(ctx,s);write(ctx,{accountName:'',accountAvatar:'',accountMeta:'',refundHint:'',couponHint:''});
       const data=await read('/stats');
       if(!current())return;
-      ctx.setData('stats',[{label:'在售商品',value:display(data.products?.online ?? '—')},{label:'今日订单',value:display(data.orders?.today ?? '—')},{label:'店铺',value:display(data.stores ?? '—')}]);
+      ctx.setData('stats',overviewStatistics(false,data));
     }
     s.overviewLoaded=true;ctx.setData('overviewError','');
   } catch (error) {if(current()){
@@ -1232,7 +1247,7 @@ async function loadOverview(ctx) {
 }
 function clearPrivateOverview(ctx,state) {
   state.spendingRevision=(state.spendingRevision || 0)+1;state.spendingOpen=false;state.spendingLoaded=false;state.spendingLoading=false;
-  write(ctx,{recentOrders:[],hasRecentOrders:false,spendingOpen:false,spendingLoading:false,spendingEmpty:false,spendingSummary:'',spendingRows:[],spendingError:''});
+  write(ctx,{hasRefundAttention:false,refundHint:'',couponHint:'',recentOrders:[],hasRecentOrders:false,spendingOpen:false,spendingLoading:false,spendingEmpty:false,spendingSummary:'',spendingRows:[],spendingError:''});
 }
 async function loadSpending(ctx,state) {
   if(state.spendingLoading)return;
