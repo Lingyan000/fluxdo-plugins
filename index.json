@@ -62,14 +62,14 @@
     {
       "id": "community.fluxdo.ldstore",
       "name": "LD士多",
-      "version": "2.8.1",
+      "version": "2.9.0",
       "apiVersion": 2,
       "author": "FluxDO 社区",
       "summary": "原生商城、订单、消息与求购洽谈，支持后台提醒和证据附件。",
       "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。已有求购会话支持历史分页、发送和关联订单。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
       "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.8.1/ld-store-2.8.1.fluxplugin",
-      "sha256": "4b2bdb570fd0cf321c5f7284b0ee9d7dac27e082a9592bc4e38d436aaeb64d69",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.9.0/ld-store-2.9.0.fluxplugin",
+      "sha256": "47a9ce5e368ac850ae073b35f51084f12d6cccfa6a120830dc846442f2bbc149",
       "icon": "storefront",
       "categories": [
         "购物"
@@ -81,9 +81,10 @@
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/messages-light.png",
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/buyerorder-dark.png",
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-light.png",
-        "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png"
+        "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png",
+        "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.9.0/plugins/ld-store/previews/chat-light.png"
       ],
-      "changelog": "修正会话双方消息气泡的原生对齐。新增原生求购洽谈，支持历史消息、发送、已读与关联订单。使用显式账号存储和受限查询缓存；会话失效清空私人信息。发行包增加作者签名；首次确认公钥后保留数据。需支持 storageScopes、extendedPages 的宿主，此版本为预览渠道。",
+      "changelog": "会话接入原生时间线：打开和发送后定位最新消息，历史追加与新消息到来保留阅读位置，向历史方向滑动自动分页。输入区统一应用圆角样式，随内容增长，空消息禁用发送，发送时保留焦点；完善骨架、错误恢复和键盘安全区。需支持 timelinePages、inputOptions 的宿主。",
       "requiredFeatures": [
         "confirmationDialog",
         "virtualGrid",
@@ -108,23 +109,28 @@
         "manifestLocalization",
         "accountDataMigration",
         "storageScopes",
-        "extendedPages"
+        "extendedPages",
+        "timelinePages",
+        "inputOptions"
       ],
       "locales": {
         "en": {
           "name": "LD Store",
           "summary": "Browse products, sign in, confirm orders, pay with LDC and view delivery details.",
-          "description": "Browse products, sign in, confirm orders, pay with LDC and view delivery details."
+          "description": "Browse products, sign in, confirm orders, pay with LDC and view delivery details.",
+          "changelog": "Native conversation timeline with stable reading position, history pagination and jump to latest. Refined message input, loading, errors and keyboard layout. Requires timelinePages and inputOptions."
         },
         "zh_TW": {
           "name": "LD士多",
           "summary": "瀏覽與搜尋商品，原生登入、確認訂單、使用 LDC 支付並檢視交付內容。",
-          "description": "瀏覽與搜尋商品，原生登入、確認訂單、使用 LDC 支付並檢視交付內容。"
+          "description": "瀏覽與搜尋商品，原生登入、確認訂單、使用 LDC 支付並檢視交付內容。",
+          "changelog": "會話接入原生時間軸，保留閱讀位置並支援歷史分頁。改善圓角輸入、骨架、錯誤恢復及鍵盤安全區。需要支援 timelinePages、inputOptions 的宿主。"
         },
         "zh_HK": {
           "name": "LD士多",
           "summary": "瀏覽與搜索商品，原生登錄、確認訂單、使用 LDC 支付並查看交付內容。",
-          "description": "瀏覽與搜索商品，原生登錄、確認訂單、使用 LDC 支付並查看交付內容。"
+          "description": "瀏覽與搜索商品，原生登錄、確認訂單、使用 LDC 支付並查看交付內容。",
+          "changelog": "會話接入原生時間軸，保留閱讀位置並支援歷史分頁。改善圓角輸入、骨架、錯誤恢復及鍵盤安全區。需要支援 timelinePages、inputOptions 的宿主。"
         }
       },
       "channel": "preview"
