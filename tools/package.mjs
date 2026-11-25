@@ -18,7 +18,8 @@ for (const key of ['ui', 'script']) {
   const target = await realpath(resolve(root, resource));
   const within = relative(root, target);
   assert.ok(within && !within.startsWith('..') && !isAbsolute(within), '资源必须位于插件目录内');
-  files[resource] = await readFile(target, 'utf8');
+  // 统一源码文本换行，确保同一提交在各平台生成相同签名与摘要。
+  files[resource] = (await readFile(target, 'utf8')).replaceAll('\r\n', '\n');
 }
 const tools=process.env.FLUXDO_PLUGIN_TOOLS;
 const {signBundle}=await import(tools?pathToFileURL(resolve(tools,'packages/cli/dist/signing.mjs')).href:'@fluxdo/plugin-cli/signing');
