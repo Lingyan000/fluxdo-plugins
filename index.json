@@ -62,14 +62,14 @@
     {
       "id": "community.fluxdo.ldstore",
       "name": "LD士多",
-      "version": "2.8.0",
+      "version": "2.8.1",
       "apiVersion": 2,
       "author": "FluxDO 社区",
       "summary": "原生商城、订单、消息与求购洽谈，支持后台提醒和证据附件。",
       "description": "整卡进入商城，固定搜索与分类，查看商品图文、卖家与购买条件；通过 Connect 和 LDC 收银台完成授权与付款确认，管理订单、券、收藏、评论和售后。已有求购会话支持历史分页、发送和关联订单。系统消息可筛选、标记已读并跳转关联页面。预览为模拟数据，包含图片失败占位。",
       "repository": "https://github.com/Lingyan000/fluxdo-plugins",
-      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.8.0/ld-store-2.8.0.fluxplugin",
-      "sha256": "ff618660e366e97cc5c0868f6a16a451d50c1560e339ebd816635f78eee50378",
+      "packageUrl": "https://github.com/Lingyan000/fluxdo-plugins/releases/download/ld-store-2.8.1/ld-store-2.8.1.fluxplugin",
+      "sha256": "4b2bdb570fd0cf321c5f7284b0ee9d7dac27e082a9592bc4e38d436aaeb64d69",
       "icon": "storefront",
       "categories": [
         "购物"
@@ -83,7 +83,7 @@
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-light.png",
         "https://raw.githubusercontent.com/Lingyan000/fluxdo-plugins/ld-store-2.5.0/plugins/ld-store/previews/service-card-loading-light.png"
       ],
-      "changelog": "新增原生求购洽谈，支持历史消息、发送、已读与关联订单。使用显式账号存储和受限查询缓存；会话失效清空私人信息。发行包增加作者签名；首次确认公钥后保留数据。需支持 storageScopes、extendedPages 的宿主，此版本为预览渠道。",
+      "changelog": "修正会话双方消息气泡的原生对齐。新增原生求购洽谈，支持历史消息、发送、已读与关联订单。使用显式账号存储和受限查询缓存；会话失效清空私人信息。发行包增加作者签名；首次确认公钥后保留数据。需支持 storageScopes、extendedPages 的宿主，此版本为预览渠道。",
       "requiredFeatures": [
         "confirmationDialog",
         "virtualGrid",
