@@ -715,12 +715,12 @@ async function categories(ctx) {
 async function detail(ctx) {
   const s = market(ctx);
   if (!s) return;
-  s.quoteEnabled = false;
+  s.buy = false;s.quoteEnabled = false;
   clearQuote(ctx,s,!!s.product);
   const seq = ++s.seq;
   write(ctx,{ready:!!s.product,initialLoading:!s.product,loading:true,error:'',externalError:'',buy:false});
   try {
-    const auth = await ldStore.status();
+    const auth = await ldStore.status(true);
     if (seq !== s.seq || market(ctx) !== s) return;
     write(ctx,{authorized:auth.authorized,linkProduct:false});
     if (ctx.page === 'review') {
@@ -756,13 +756,23 @@ async function detail(ctx) {
     let blocked = !s.linkProduct && stockValue(s.product)===0 ? '已售罄' : !bounds.buy ? '当前不可兑换' : '';
     if (!s.linkProduct && flag(p.isTestMode) && !own) blocked='测试中，仅卖家可兑换';
     if (!s.linkProduct && !flag(p.isTestMode) && own) blocked='不能兑换自己的商品';
-    // 有登录态时核对士多认可的等级，最终库存和购买限制仍以核价接口为准。
+    // 校验接口可能只有身份，等级从同一士多会话的声明补齐；未知不等于 TL0。
     const required=Number(s.product.purchaseTrustLevel || 0);
-    if (required>0 && auth.authorized) {
+    if (required>0 && auth.authorized && !blocked) {
       try {
-        const viewer=normalizeOrderData(await read('/auth/verify',true));
-        if (Number(viewer.user?.trustLevel ?? viewer.trustLevel ?? 0)<required) blocked='需要信任等级 TL'+required;
-      } catch (_) { blocked='暂时无法核对购买资格，请刷新重试'; }
+        const verified=await read('/auth/verify',true);
+        if (seq !== s.seq || market(ctx) !== s) return;
+        const viewer=storeIdentity(verified,auth.claims,currentAccount);
+        if (viewer.trustLevel==null) blocked='暂时无法核对购买资格，请刷新重试';
+        else if (viewer.trustLevel<required) blocked='需要信任等级 TL'+required;
+      } catch (error) {
+        if (seq !== s.seq || market(ctx) !== s) return;
+        blocked=error.status===401 ? '士多会话已失效，请重新登录。' : '暂时无法核对购买资格，请刷新重试';
+        if(error.status===401) {
+          auth.authorized=false;s.checkoutEnabled=false;s.record=null;
+          write(ctx,{authorized:false,nativeOrder:false,orderState:'idle',orderNote:''});
+        }
+      }
       if (seq !== s.seq || market(ctx) !== s) return;
     }
     bounds.buy = !blocked && (s.linkProduct || bounds.buy);
@@ -1113,6 +1123,24 @@ function showOrderFilters(ctx) {
   const status = market(ctx).orderStatus || '';
   ctx.setData('orderFilters',orderFilters.map(filter => ({...filter,selected:filter.status === status})));
 }
+function storeTrustLevel(value) {
+  if(typeof value!=='number' && (typeof value!=='string' || !/^\d+$/.test(value.trim())))return null;
+  const level=Number(value);
+  return Number.isInteger(level) && level>=0 && level<=4 ? level : null;
+}
+function storeIdentity(profile,claims,account) {
+  profile=normalizeOrderData(profile);claims=normalizeOrderData(claims || {});
+  if(!account?.id || profile?.authenticated!==true || String(profile.user?.id)!==String(account.id) ||
+    (profile.user?.site || 'linux.do')!=='linux.do') {
+    const error=Error('士多会话已失效，请重新登录。');error.status=401;throw error;
+  }
+  const now=Date.now(),sameClaims=String(claims.sub ?? claims.id)===String(account.id) &&
+    (claims.site || 'linux.do')==='linux.do' && Number.isSafeInteger(claims.exp) && claims.exp*1000>now &&
+    (claims.nbf==null || (Number.isSafeInteger(claims.nbf) && claims.nbf*1000<=now));
+  return {user:profile.user,claims:sameClaims ? claims : {},
+    trustLevel:storeTrustLevel(profile.user.trustLevel ?? profile.trustLevel) ??
+      (sameClaims ? storeTrustLevel(claims.trustLevel) : null)};
+}
 function accountAvatar(user) {
   for(const raw of [user.animatedAvatar,user.avatar,user.avatarUrl,user.avatarTemplate]) {
     if(typeof raw!=='string' || !raw.trim())continue;
@@ -1147,18 +1175,12 @@ async function loadAccountIdentity(ctx,refresh=false) {
   if(identityTask?.key===key)return identityTask.promise;
   const promise=(async()=>{
     try {
-      const profile=normalizeOrderData(await read('/auth/verify',true));
+      const verified=await read('/auth/verify',true);
       if(revision!==identityRevision)return null;
-      if(profile.authenticated!==true || String(profile.user?.id)!==String(account.id) ||
-        (profile.user?.site || 'linux.do')!=='linux.do') {
-        clearAccountIdentity();const error=Error('士多会话已失效。');error.status=401;throw error;
-      }
-      // 旧会话可直接读取声明，头像不依赖校验接口是否附带完整用户资料。
-      const sameClaims=String(claims.sub ?? claims.id)===String(account.id) && (claims.site || 'linux.do')==='linux.do';
-      const level=profile.user.trustLevel ?? (sameClaims ? claims.trustLevel : null);
-      const value={authorized:true,accountName:display(profile.user.name || (sameClaims && claims.name) || profile.user.username || account.username),
-        accountMeta:['@'+(profile.user.username || account.username),level!=null ? 'TL'+level : ''].filter(Boolean).join(' · '),
-        accountAvatar:accountAvatar(profile.user) || (sameClaims ? accountAvatar(claims) : '')};
+      const identity=storeIdentity(verified,claims,account),user=identity.user,known=identity.claims,level=identity.trustLevel;
+      const value={authorized:true,accountName:display(user.name || known.name || user.username || account.username),
+        accountMeta:['@'+(user.username || account.username),level!=null ? 'TL'+level : ''].filter(Boolean).join(' · '),
+        accountAvatar:accountAvatar(user) || accountAvatar(known)};
       identityValue={key,value};publishAccountIdentity(value);return value;
     } catch(error) {
       if(revision===identityRevision && error.status===401)clearAccountIdentity();
