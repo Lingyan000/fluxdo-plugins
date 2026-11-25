@@ -60,14 +60,20 @@ test('求购会话按实际协议读取，历史去重，发送防连点并由�
   const t=setup({timers:true,respond:r=>{
     if(r.url.pathname.endsWith('/conversations/my'))return {conversations:[{id:12,request:{id:7,title:'求购开发工具'},unreadCount:1,latestMessage:{content:'你好'},status:'negotiating'}],pagination:{hasMore:false}};
     if(r.url.pathname.endsWith('/buy-sessions/12'))return {session:{id:12,status:'negotiating',canSendMessage:true,role:'requester'},request:{id:7,title:'求购开发工具'},order:{orderNo:'chat-order'}};
-    if(r.url.pathname.endsWith('/messages')){if(r.method==='POST'){sends++;return {message:{id:3,sessionId:12,content:r.body.content,senderRole:'requester'}};}return {messages:[{id:2,sessionId:12,content:'你好',createdAt:1000,senderRole:'provider'}],pagination:{hasMoreBefore:true,latestMessageId:2}};}
+    if(r.url.pathname.endsWith('/messages')){if(r.method==='POST'){sends++;return {message:{id:3,sessionId:12,content:r.body.content,senderRole:'requester',createdAt:2000}};}return {messages:[{id:2,sessionId:12,content:'你好',createdAt:1000,senderRole:'provider'}],pagination:{hasMoreBefore:true,latestMessageId:2}};}
     return {};
   }});
   const list=await t.page('chats');assert.equal(list.data.rows[0].id,'12');await t.fire(list,'chatOpen',{id:'12'});assert.deepEqual({...t.nav[0].args},{id:'12',requestId:'7'});
   const p=await t.page('chat',{id:'12',requestId:'7'});assert.equal(p.data.canSend,true);assert.equal(p.data.chatRows.length,1);
+  assert.equal(p.data.chatSendEnabled,false);assert.deepEqual([...p.data.chatKeys],['2']);
   await t.fire(p,'chatOrder');assert.deepEqual({...t.nav.at(-1).args},{no:'chat-order'});
   await t.fire(p,'chatOlder');assert.equal(p.data.chatRows.length,1);assert.ok(t.calls.some(r=>r.url.searchParams.get('beforeId')==='2'));
-  await t.fire(p,'chatInput',{value:'测试消息'});await Promise.all([t.fire(p,'chatSend'),t.fire(p,'chatSend')]);assert.equal(sends,1);assert.equal(p.data.chatDraft,'');assert.equal(p.data.chatRows.length,2);
+  await t.fire(p,'chatInput',{value:'  '});assert.equal(p.data.chatSendEnabled,false);
+  await t.fire(p,'chatInput',{value:'😀'.repeat(300)});assert.equal(p.data.chatSendEnabled,false);assert.ok(p.data.chatDraftError);assert.equal(p.data.chatDraft,'😀'.repeat(300));
+  await t.fire(p,'chatInput',{value:'测试消息'});assert.equal(p.data.chatSendEnabled,true);
+  await Promise.all([t.fire(p,'chatSend'),t.fire(p,'chatSend')]);assert.equal(sends,1);assert.equal(p.data.chatDraft,'');assert.equal(p.data.chatRows.length,2);
+  assert.equal(p.data.chatSendEnabled,false);assert.equal(p.data.chatEndRevision,1);
+  assert.deepEqual([...p.data.chatKeys],['3','2']);
   assert.ok([...t.pendingTimers.values()].some(timer=>timer.delay===15000));
   t.setAuthorized(false);await t.fire(p,'chatRefresh');
   assert.equal(p.data.canSend,false);assert.equal(p.data.chatRows.length,0);assert.equal(p.data.chatOrder,'');

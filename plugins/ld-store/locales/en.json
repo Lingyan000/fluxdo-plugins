@@ -532,5 +532,9 @@
   "上次发送结果未确认，请先查看会话是否已收到，避免重复发送。": "The previous send was not confirmed. Check the conversation before sending again.",
   "重新发送": "Resend",
   "已关闭": "Closed",
-  "已支付": "Paid"
+  "已支付": "Paid",
+  "输入消息": "Message",
+  "搜索会话": "Search conversations",
+  "还没有消息": "No messages yet",
+  "消息过长，请缩短后发送": "This message is too long. Shorten it before sending."
 }

@@ -427,23 +427,36 @@ widget Reminders = Column(crossAxisAlignment: "stretch", children: [
 
 widget Chats = ListPage(loadingPlaceholder: RowsSkeleton(), loading: data.loading, loadingMore: data.loadingMore, hasMore: data.more,
   error: data.error, emptyTitle: "暂无洽谈会话", onRefresh: event "chatsRefresh" {}, onRetry: event "chatsRefresh" {}, onLoadMore: event "chatsMore" {},
-  toolbar: SearchInput(value: data.search, hint: "搜索求购标题或公开账号", onChanged: event "chatsSearch" {}, onSubmitted: event "chatsRefresh" {}),
+  toolbar: SearchInput(value: data.search, hint: "搜索会话", onChanged: event "chatsSearch" {}, onSubmitted: event "chatsRefresh" {}),
   header: Column(children: [BuyerLogin(), switch data.chatsChanged {true: Button(label: "有新消息，点击更新", variant: "tonal", onPressed: event "chatsRefresh" {}), default: SizedBoxShrink()}]),
   items: [...for row in data.rows: ContentRow(title: row.title, summary: row.summary, meta: row.name, leading: Avatar(label: row.name),
     detail: Column(mainAxisSize: "min", children: [Chip(label: row.state), switch row.unread {true: Label(text: "未读", color: "primary", style: "labelSmall"), default: SizedBoxShrink()}]), onTap: event "chatOpen" {id: row.id})]
 );
 widget ChatActions = Row(mainAxisSize: "min", children: [IconButton(icon: "refresh", tooltip: "刷新会话", loading: data.loading, onPressed: event "chatRefresh" {})]);
-widget Chat = PageLayout(loading: data.loading, onRefresh: event "chatRefresh" {},
-  footer: switch data.canSend {true: Padding(padding: [16.0, 8.0, 16.0, 8.0], child: Row(crossAxisAlignment: "end", children: [
-    Expanded(child: TextInput(value: data.chatDraft, hint: "输入消息（最多 500 字）", maxLines: 2, onChanged: event "chatInput" {})), Gap(size: 8),
-    Button(label: "发送", loading: data.chatSending, onPressed: event "chatSend" {})])), default: SizedBoxShrink()},
-  children: [BuyerLogin(), Wrap(spacing: 8.0, children: [Chip(label: data.chatState), switch data.chatOrder {"": SizedBoxShrink(), default: Button(label: "查看关联订单", variant: "text", onPressed: event "chatOrder" {})}]),
-    switch data.chatError {"": SizedBoxShrink(), default: Label(text: data.chatError, color: "error")},
-    switch data.chatMore {true: Button(label: "加载更早消息", variant: "text", loading: data.loadingMore, onPressed: event "chatOlder" {}), default: SizedBoxShrink()},
+widget ChatSkeleton = Skeleton(child: Column(crossAxisAlignment: "stretch", children: [
+  Align(alignment: {x: -1.0, y: 0.0}, child: SkeletonBox(width: 220, height: 72, radius: 16)), Gap(size: 16),
+  Align(alignment: {x: 1.0, y: 0.0}, child: SkeletonBox(width: 160, height: 56, radius: 16)),
+]));
+widget Chat = TimelinePage(identity: data.chatIdentity, itemKeys: data.chatKeys,
+  loading: data.loading, loadingPlaceholder: ChatSkeleton(), emptyTitle: "还没有消息", error: data.chatError,
+  onRetry: event "chatRefresh" {}, hasMore: data.chatMore, loadingMore: data.loadingMore,
+  moreLabel: "加载更早消息", onLoadMore: event "chatOlder" {}, endRevision: data.chatEndRevision,
+  header: Column(crossAxisAlignment: "stretch", children: [BuyerLogin(), Wrap(spacing: 8.0, crossAxisAlignment: "center", children: [
+    switch data.chatReady {true: Chip(label: data.chatState), default: SizedBoxShrink()},
+    switch data.chatOrder {"": SizedBoxShrink(), default: Button(label: "查看关联订单", variant: "text", onPressed: event "chatOrder" {})}])]),
+  footer: switch data.canSend {true: Column(mainAxisSize: "min", crossAxisAlignment: "stretch", children: [
+    switch data.chatDraftError {"": SizedBoxShrink(), default: Label(text: data.chatDraftError, style: "bodySmall", color: "error")},
+    Row(crossAxisAlignment: "end", children: [
+    Expanded(child: TextInput(value: data.chatDraft, hint: "输入消息", variant: "filled", minLines: 1, maxLines: 4,
+      maxLength: 500, showCounter: false, readOnly: data.chatSending, onChanged: event "chatInput" {})), Gap(size: 8),
+    Button(label: "发送", enabled: data.chatSendEnabled, loading: data.chatSending, onPressed: event "chatSend" {})])]), default: SizedBoxShrink()},
+  items: [
     ...for message in data.chatRows: Padding(padding: [0.0, 6.0], child: Align(alignment: {x: switch message.system {true: 0.0, default: switch message.mine {true: 1.0, default: -1.0}}, y: 0.0}, child:
-      Surface(color: switch message.mine {true: "secondaryContainer", default: "surfaceContainerLow"}, child: Column(mainAxisSize: "min", crossAxisAlignment: "start", children: [
-        switch message.system {true: SizedBoxShrink(), default: Label(text: message.author, style: "labelMedium", color: "onSurfaceVariant")},
-        SelectableLabel(text: message.content), Gap(size: 6), RelativeTime(value: message.time)
-      ]))))
+      FractionallySizedBox(widthFactor: 0.88, alignment: {x: switch message.mine {true: 1.0, default: -1.0}, y: 0.0}, child:
+        Align(alignment: {x: switch message.mine {true: 1.0, default: -1.0}, y: 0.0}, child:
+          Surface(padding: [14.0, 10.0], color: switch message.mine {true: "secondaryContainer", default: "surfaceContainerLow"}, child: Column(mainAxisSize: "min", crossAxisAlignment: "start", children: [
+            switch message.system {true: SizedBoxShrink(), default: switch message.mine {true: SizedBoxShrink(), default: Padding(padding: [0.0, 0.0, 0.0, 4.0], child: Label(text: message.author, style: "labelMedium", color: "onSurfaceVariant"))}},
+            SelectableLabel(text: message.content), Gap(size: 6), RelativeTime(value: message.time)
+          ]))))))
   ]
 );

@@ -2152,13 +2152,15 @@ const chatId=value=>/^[1-9][0-9]{0,19}$/.test(String(value??''))?String(value):'
 function chatCurrent(ctx,s,revision){return market(ctx)===s && !s.hidden && revision===s.chatRevision;}
 function clearChatData(ctx,s){
   s.chatRows=[];s.chatSession=null;s.chatDraft='';s.chatOrder='';s.chatRead=null;s.chatMore=false;s.chatUncertain=null;
-  write(ctx,{chatRows:[],canSend:false,needsSession:true,authorized:false,chatDraft:'',chatOrder:'',chatState:'',chatMore:false,chatReady:false});
+  write(ctx,{chatRows:[],chatKeys:[],canSend:false,chatSendEnabled:false,needsSession:true,authorized:false,chatDraft:'',chatDraftError:'',chatOrder:'',chatState:'',chatMore:false,chatReady:false});
 }
 function showChatMessages(ctx,s){
   const rows=[...(s.chatRows||[])].sort((a,b)=>storeMillis(a.createdAt)-storeMillis(b.createdAt)||String(a.id).localeCompare(String(b.id),undefined,{numeric:true}));
   s.chatRows=rows.slice(-500);
-  ctx.setData('chatRows',s.chatRows.map(message=>({id:String(message.id),system:message.senderRole==='system',mine:message.senderRole===s.chatRole,
-    author:display(message.senderPublicUsername)||'参与者',content:display(message.content),time:storeTime(message.createdAt)})));
+  const newest=[...s.chatRows].reverse();
+  write(ctx,{chatIdentity:String(ctx.params.id),chatKeys:newest.map(message=>String(message.id)),
+    chatRows:newest.map(message=>({id:String(message.id),system:message.senderRole==='system',mine:message.senderRole===s.chatRole,
+    author:display(message.senderPublicUsername)||'参与者',content:display(message.content),time:storeTime(message.createdAt)}))});
 }
 async function loadConversations(ctx,more=false){
   const s=market(ctx);if(!s || s.hidden || (more && (s.loading || !s.more)))return;
@@ -2182,7 +2184,7 @@ async function syncChat(ctx,{older=false,initial=false}={}){
   const s=market(ctx);if(!s || s.hidden || s.chatLoading || s.chatSending || (older&&!s.chatMore))return;
   const id=chatId(ctx.params.id),requestId=chatId(ctx.params.requestId);if(!id||!requestId)return;
   const revision=s.chatRevision=(s.chatRevision||0)+1,current=()=>chatCurrent(ctx,s,revision);
-  s.chatLoading=true;write(ctx,{loading:initial&&!s.chatSession,loadingMore:older,error:'',chatError:'',needsSession:false});
+  s.chatLoading=true;write(ctx,{chatIdentity:id,chatDraftError:s.chatDraft?.length>500?'消息过长，请缩短后发送':'',chatSendEnabled:false,loading:initial&&!s.chatSession,loadingMore:older,error:'',chatError:'',needsSession:false});
   try{
     const auth=await ldStore.status();if(!current())return;ctx.setData('authorized',auth.authorized);
     if(!auth.authorized){clearChatData(ctx,s);return;}
@@ -2209,7 +2211,7 @@ async function syncChat(ctx,{older=false,initial=false}={}){
       try{await buyerRequest(ctx,'/buy-sessions/'+id+'/read','POST',{lastReadMessageId:latest});if(current())s.chatRead=latest;}catch(_){/* 已读同步失败不覆盖消息；下次刷新重试。 */}
     }
   }catch(error){if(current()){if(error.status===401)clearChatData(ctx,s);ctx.setData('chatError',error.message);}}
-  finally{if(current()){s.chatLoading=false;write(ctx,{loading:false,loadingMore:false});scheduleChat(ctx,s);}}
+  finally{if(current()){s.chatLoading=false;write(ctx,{loading:false,loadingMore:false,chatSendEnabled:!!s.chatDraft?.trim()&&s.chatDraft.length<=500});scheduleChat(ctx,s);}}
 }
 function scheduleChat(ctx,s){
   if(s.chatTimer)clearTimeout(s.chatTimer);s.chatTimer=null;
@@ -2230,7 +2232,7 @@ fluxdo.on('chatsMore',ctx=>loadConversations(ctx,true));
 fluxdo.on('chatOpen',(ctx,args)=>{const row=market(ctx)?.rows.find(r=>r.id===args.id);if(row)return ctx.api.navigate('chat',{id:row.id,requestId:row.requestId});});
 fluxdo.on('chatRefresh',ctx=>syncChat(ctx,{initial:true}));
 fluxdo.on('chatOlder',ctx=>syncChat(ctx,{older:true}));
-fluxdo.on('chatInput',(ctx,args)=>{const s=market(ctx);if(s){s.chatDraft=String(args.value||'').slice(0,500);ctx.setData('chatDraft',s.chatDraft);}});
+fluxdo.on('chatInput',(ctx,args)=>{const s=market(ctx);if(s&&!s.chatSending){s.chatDraft=String(args.value||'');write(ctx,{chatDraft:s.chatDraft,chatDraftError:s.chatDraft.length>500?'消息过长，请缩短后发送':'',chatSendEnabled:!s.chatLoading&&!!s.chatDraft.trim()&&s.chatDraft.length<=500});}});
 fluxdo.on('chatOrder',ctx=>{const no=market(ctx)?.chatOrder;if(no)return ctx.api.navigate('order',{no});});
 fluxdo.on('chatSend',async ctx=>{
   const s=market(ctx),id=chatId(ctx.params.id),content=s?.chatDraft?.trim();
@@ -2242,7 +2244,8 @@ fluxdo.on('chatSend',async ctx=>{
     s.chatUncertain=content;
     const data=await buyerRequest(ctx,'/buy-sessions/'+id+'/messages','POST',{content});if(!chatCurrent(ctx,s,revision))return;
     if(!chatId(data.message?.id)||(data.message.sessionId&&chatId(data.message.sessionId)!==id))throw Error('发送结果无法确认，请先刷新会话');
-    s.chatRows=mergeRows(s.chatRows||[],[{...data.message,id:String(data.message.id)}]);s.chatDraft='';s.chatUncertain=null;ctx.setData('chatDraft','');showChatMessages(ctx,s);
+    s.chatRows=mergeRows(s.chatRows||[],[{...data.message,id:String(data.message.id)}]);s.chatDraft='';s.chatUncertain=null;
+    write(ctx,{chatDraft:'',chatSendEnabled:false,chatEndRevision:s.chatEndRevision=(s.chatEndRevision||0)+1});showChatMessages(ctx,s);
     for(const view of views.values())if(view.ctx?.page==='chats'){view.chatsDirty=true;view.ctx.setData('chatsChanged',true);}
   }catch(error){s.chatUncertain=content;if(chatCurrent(ctx,s,revision))ctx.setData('chatError',error.message||'发送结果无法确认，请先刷新会话');}
   finally{s.chatSending=false;if(market(ctx)===s){ctx.setData('chatSending',false);scheduleChat(ctx,s);}}
