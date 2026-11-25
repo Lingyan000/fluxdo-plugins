@@ -806,13 +806,13 @@ async function detail(ctx) {
 }
 async function loadComments(ctx,more) {
   const s = market(ctx);
-  if (!s || ctx.page !== 'product' || (more && s.commentsLoading)) return;
+  if (!s || ctx.page !== 'product' || (more && (s.commentsLoading || !s.commentsMore))) return;
   const accountRevision=identityRevision;
   const revision = s.commentsRevision = (s.commentsRevision || 0) + 1;
   const current = () => market(ctx) === s && s.commentsRevision === revision && identityRevision===accountRevision;
   const page = more ? (s.commentsPage || 1) + 1 : 1;s.commentsRetryMore=more;
   s.commentsLoading = true;
-  write(ctx,{commentsLoading:true,commentsError:''});
+  write(ctx,{commentsLoading:true,commentsInitialLoading:!s.commentsLoaded,commentsError:''});
   try {
     const data = normalizeOrderData(await readPublic('/products/' + encodeURIComponent(ctx.params.id) +
       '/comments?page=' + page + '&pageSize=10'));
@@ -824,10 +824,12 @@ async function loadComments(ctx,more) {
     const previous = more && data.commentEnabled!==false ? s.comments || [] : [];
     s.comments = mergeRows(previous,rows);
     s.commentsPage = page;
+    s.commentsLoaded = true;
     const paging = data.pagination || {};
     const summary=data.summary || {};
-    write(ctx,{comments:s.comments,commentsMore:hasNextPage(paging,page,rows.length,10),commentStatsReady:!!data.summary,
-      commentStats:[{label:'评分',value:Number(summary.ratedCount)>0 ? Number(summary.averageRating).toFixed(1)+' / 5' : '暂无'},
+    s.commentsMore=data.commentEnabled!==false && hasNextPage(paging,page,rows.length,10);
+    write(ctx,{comments:s.comments,commentsMore:s.commentsMore,commentStatsReady:!!data.summary,
+      commentStats:[{label:'评分',value:Number(summary.ratedCount)>0 ? Number(summary.averageRating).toFixed(1)+' / 5' : '—'},
         {label:'已评分',value:display(summary.ratedCount ?? 0)},{label:'收藏',value:display(summary.favoriteCount ?? 0)},
         {label:'评论 / 回复',value:display(summary.visibleCommentCount ?? paging.total ?? 0)+' / '+display(summary.visibleReplyCount ?? 0)}],
       canComment:data.commentEnabled === true,
@@ -835,7 +837,7 @@ async function loadComments(ctx,more) {
   } catch (e) {
     if (current()) ctx.setData('commentsError',String(e.message));
   } finally {
-    if (current()) {s.commentsLoading = false;ctx.setData('commentsLoading',false);}
+    if (current()) {s.commentsLoading = false;write(ctx,{commentsLoading:false,commentsInitialLoading:false});}
   }
 }
 function commentRow(c) {
@@ -1287,7 +1289,7 @@ fluxdo.on('page.open',ctx => {
   if(ctx.page==='chats')return loadConversations(ctx);
   if(ctx.page==='messages')return loadMessages(ctx,false);
   if (['favorites','coupons','coupon','refund','comment','merchant','reports','report'].includes(ctx.page)) return loadBuyerPage(ctx,false);
-  if (ctx.page === 'product') write(ctx,{comments:[],commentStatsReady:false,commentsError:'',commentsMessage:'',commentsMore:false,commentsLoading:false});
+  if (ctx.page === 'product') write(ctx,{comments:[],commentStatsReady:false,commentsError:'',commentsMessage:'',commentsMore:false,commentsLoading:false,commentsInitialLoading:true});
   if (ctx.page === 'orders' || ctx.page === 'order') {
     s.orderStatus=ctx.params.status || '';ctx.setData('filterName','全部订单');
     showOrderFilters(ctx);
@@ -1995,7 +1997,7 @@ fluxdo.on('signOut',async ctx=>{
     if(['orders','order'].includes(v.ctx.page))clearOrderData(v.ctx,v);
     if(['chat','chats'].includes(v.ctx.page)){stopChat(v);clearChatData(v.ctx,v);v.rows=[];write(v.ctx,{rows:[],more:false});}
     if(v.ctx.page==='messages'){v.rows=[];v.page=0;v.more=false;v.messagesLoaded=false;v.messagesCheckPending=false;v.messagesChanged=false;write(v.ctx,{rows:[],more:false,unread:false,messagesChanged:false});}
-    if(v.ctx.page==='product'){v.comments=[];v.commentsRevision=(v.commentsRevision || 0)+1;v.commentsPage=0;v.commentsLoading=false;write(v.ctx,{comments:[],commentsMore:false,commentsLoading:false,commentStatsReady:false,canComment:false});}
+    if(v.ctx.page==='product'){v.comments=[];v.commentsRevision=(v.commentsRevision || 0)+1;v.commentsPage=0;v.commentsLoading=false;v.commentsLoaded=false;v.commentsMore=false;write(v.ctx,{comments:[],commentsMore:false,commentsLoading:false,commentsInitialLoading:false,commentsMessage:'',commentsError:'',commentStatsReady:false,canComment:false});}
     write(v.ctx,{accountName:'',accountAvatar:'',accountMeta:'',authorized:false,stats:[]});}
   try {await ctx.api.credentials.remove('account');}
   finally {clearAccountIdentity();identitySigningOut=false;}
