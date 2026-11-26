@@ -8,9 +8,9 @@
 
 安装时关闭的权限可以在使用相关功能时再申请。取消会保留输入和选择，卡片更多菜单或插件管理中的权限设置可随时调整。关闭动态读取权限后仍可浏览本地已有记录。
 
-1.3.0 需要支持清单全部能力（包括 `notificationStatus` 与 `hostEnvironment`）的 FluxDO。从原市场条目更新可沿用订阅与已读记录。界面支持简体、台湾繁体、香港繁体和英文，切换语言保留内容。
+首发版本 1.0.0 需要支持清单全部能力（包括 `notificationStatus` 与 `hostEnvironment`）的 FluxDO。同源且数据兼容的替换保留订阅与已读记录；当前首发候选尚未替换默认市场。界面支持简体、台湾繁体、香港繁体和英文，切换语言保留内容。
 
-修改 `src/main.js`、`src/ui.rfwtxt` 和 `locales/en.json` 后执行 `node tools/localize.mjs`，不要直接编辑根目录的生成脚本与界面。用 `node tools/package.mjs plugins/activity-feed dist/activity-feed-1.3.0.fluxplugin` 打包，真实宿主使用同一发行包运行 QuickJS、存储和界面回归。
+修改 `src/main.js`、`src/ui.rfwtxt` 和 `locales/en.json` 后执行 `node tools/localize.mjs`，不要直接编辑根目录的生成脚本与界面。用 `node tools/package.mjs plugins/activity-feed dist/activity-feed-v1.0.0.fluxplugin` 打包，真实宿主使用同一发行包运行 QuickJS、存储和界面回归。
 
 卡片下方仅显示订阅人数和未读动态，点击标题、空白或统计区域可进入动态页。卡片内容仍由插件 UI 声明，宿主只负责默认页面路由与独立管理菜单。
 

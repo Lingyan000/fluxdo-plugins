@@ -2,7 +2,7 @@
   "schema": 12,
   "apiVersion": 2,
   "id": "community.fluxdo.activity",
-  "version": "1.4.0",
+  "version": "1.0.0",
   "name": "动态订阅",
   "author": "FluxDO 社区",
   "description": "按名单聚合论坛动态，保留最近记录并提醒未读。",

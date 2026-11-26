@@ -3,7 +3,7 @@
   "apiVersion": 2,
   "id": "community.fluxdo.quicknotes",
   "name": "随手记",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "author": "FluxDO 社区",
   "description": "保存在设备上的轻量备忘，可在元宇宙中直接编辑。",
   "icon": "edit",
