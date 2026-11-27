@@ -8,7 +8,7 @@ on:
       preview:
         description: 作为预览版本发布
         type: boolean
-        default: true
+        default: false
       draft:
         description: 仅准备草稿，验收后再公开
         type: boolean
