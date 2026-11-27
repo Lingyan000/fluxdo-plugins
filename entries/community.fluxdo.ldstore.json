@@ -15,5 +15,26 @@
   ],
   "screenshots": [],
   "changelog": "商品、订单和评论支持上滑自动分页，商品卡片支持同排等高。需要更新 FluxDO 宿主，旧版仍可手动加载更多。",
-  "channel": "stable"
+  "channel": "stable",
+  "permissionsSummary": {
+    "permissions": [
+      "identity",
+      "links",
+      "network",
+      "payments",
+      "publicImages",
+      "sandbox",
+      "serviceAccount"
+    ],
+    "networkHosts": [
+      "api.ldspro.qzz.io",
+      "api1.ldspro.qzz.io",
+      "api2.ldspro.qzz.io",
+      "ldcstore.com"
+    ],
+    "linkHosts": [
+      "ldcstore.com"
+    ]
+  },
+  "publisherKeyFingerprint": null
 }

@@ -37,3 +37,9 @@ CI 会阻止移除仍在发布的正式条目。需要撤回时，在该条目�
 
 
 schema 10 插件可声明 `requiredFeatures: ["confirmationDialog", "virtualGrid"]`。条目必须包含与包清单相同的能力集合；校验工具检查两者一致。新客户端按能力判断兼容性，旧客户端在安装时通过 schema 拒绝不支持的包。没有能力声明的历史插件保持兼容。
+
+## 权限与发布者预览
+
+目录 schemaVersion 保持 1。`permissionsSummary` 可选，包含按字典排序去重的 `permissions`（宿主权限类别名）、`networkHosts` 和 `linkHosts`。`publisherKeyFingerprint` 缺省表示尚未提供预览，显式 null 表示未签名，64 位小写十六进制字符串表示规范 RSA 公钥 `{e,kty,n}` 的 SHA-256 指纹。旧目录缺字段时，客户端显示安装时核验，不推断为未签名。
+
+`fluxdo market-entry` 从刚构建的包生成预览。维护现有条目可执行 `node tools/catalog.mjs --refresh-preview`：先验证条目指向的公开 Release、附件摘要、签名与清单，再生成预览；不使用当前工作区新版本的清单补写旧发行摘要。`--verify-packages` 拒绝目录摘要与包不一致。客户端下载时也核对摘要，实际授权始终由已验真的包内清单决定。

@@ -15,5 +15,13 @@
   ],
   "screenshots": [],
   "changelog": "首次发布到 GitHub 插件市场。",
-  "channel": "stable"
+  "channel": "stable",
+  "permissionsSummary": {
+    "permissions": [
+      "sandbox"
+    ],
+    "networkHosts": [],
+    "linkHosts": []
+  },
+  "publisherKeyFingerprint": null
 }

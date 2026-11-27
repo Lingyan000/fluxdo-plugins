@@ -1,3 +1,4 @@
+import {marketPreview} from './market-preview.mjs';
 import assert from 'node:assert/strict';
 import { createHash, createPublicKey, verify } from 'node:crypto';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
@@ -68,6 +69,15 @@ export function validateEntry(entry) {
   }
   for (const image of entry.screenshots ?? []) https(image);
   assert.ok(entry.icon === undefined || (typeof entry.icon === 'string' && entry.icon.length <= 64));
+  if(Object.hasOwn(entry,'publisherKeyFingerprint'))assert.ok(entry.publisherKeyFingerprint===null||/^[a-f0-9]{64}$/.test(entry.publisherKeyFingerprint),'发布者指纹无效');
+  if(entry.permissionsSummary!==undefined){
+    const summary=entry.permissionsSummary;assert.ok(summary&&typeof summary==='object'&&!Array.isArray(summary));
+    assert.deepEqual(Object.keys(summary).sort(),['linkHosts','networkHosts','permissions']);
+    for(const [key,limit] of [['permissions',32],['networkHosts',32],['linkHosts',32]]){
+      assert.ok(Array.isArray(summary[key])&&summary[key].length<=limit&&summary[key].every(v=>typeof v==='string'&&v.length<=253),'权限摘要无效');
+      assert.deepEqual(summary[key],[...new Set(summary[key])].sort(),'权限摘要须排序去重');
+    }
+  }
   requiredFeatures(entry.requiredFeatures);
   return entry;
 }
@@ -78,6 +88,9 @@ export function validatePackage(bytes, entry) {
   const bundle = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
   const {manifest,files} = bundle;
   verifyPublisher(bundle);
+  const preview=marketPreview(bundle);
+  if(entry.permissionsSummary!==undefined)assert.deepEqual(entry.permissionsSummary,preview.permissionsSummary,'目录权限摘要与插件包不一致');
+  if(Object.hasOwn(entry,'publisherKeyFingerprint'))assert.equal(entry.publisherKeyFingerprint,preview.publisherKeyFingerprint,'目录发布者与插件包不一致');
   assert.equal(manifest.id, entry.id);
   assert.equal(manifest.version, entry.version);
   assert.equal(manifest.apiVersion, entry.apiVersion);
@@ -206,7 +219,7 @@ export function validateCatalogTransition(previous, next) {
   }
 }
 
-async function verifyPackage(entry) {
+async function verifyPackage(entry, {preview = false} = {}) {
   const url = new URL(entry.packageUrl);
   const parts=url.pathname.split('/');
   const release=await fetch(`https://api.github.com/repos/${parts[1]}/${parts[2]}/releases/tags/${encodeURIComponent(decodeURIComponent(parts[5]))}`, {
@@ -224,19 +237,23 @@ async function verifyPackage(entry) {
     assert.ok(size <= maxBundleBytes, '插件包过大');
     chunks.push(chunk);
   }
-  validatePackage(Buffer.concat(chunks), entry);
+  const bytes = Buffer.concat(chunks);
+  validatePackage(bytes, entry);
+  return preview ? {...entry, ...marketPreview(JSON.parse(bytes))} : entry;
 }
 
-export async function buildCatalog({ check = false, verify = false } = {}) {
+export async function buildCatalog({ check = false, verify = false, preview = false } = {}) {
+  assert.ok(!check || !preview, "--check 不写入预览摘要");
   const names = (await readdir(resolve(root, 'entries'))).filter(name => name.endsWith('.json')).sort();
   assert.ok(names.length <= 1000);
   const entries = [];
   for (const name of names) {
-    const entry = validateEntry(JSON.parse(await readFile(resolve(root, 'entries', name), 'utf8')));
+    let entry = validateEntry(JSON.parse(await readFile(resolve(root, 'entries', name), 'utf8')));
     const channel=entry.channel??(entry.version.includes('-')?'preview':'stable');
     assert.equal(name, `${entry.id}${channel==='preview'?'.preview':''}.json`);
     assert.ok(!entries.some(previous => previous.id === entry.id && (previous.channel??(previous.version.includes('-')?'preview':'stable'))===channel), '重复插件 ID 与渠道');
-    if (verify) await verifyPackage(entry);
+    if (verify || preview) entry = await verifyPackage(entry, {preview});
+    if (preview) await writeFile(resolve(root, 'entries', name), JSON.stringify(entry, null, 2) + '\n');
     entries.push(entry);
   }
   const output = JSON.stringify({ schemaVersion: 1, name: 'FluxDO 元宇宙市场', plugins: entries }, null, 2) + '\n';
@@ -248,5 +265,5 @@ export async function buildCatalog({ check = false, verify = false } = {}) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  await buildCatalog({ check: process.argv.includes('--check'), verify: process.argv.includes('--verify-packages') });
+  await buildCatalog({ check: process.argv.includes('--check'), verify: process.argv.includes('--verify-packages'), preview: process.argv.includes('--refresh-preview') });
 }
