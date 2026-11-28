@@ -25,7 +25,9 @@
     "hostEnvironment",
     "pageChrome",
     "manifestLocalization",
-    "storageScopes"
+    "storageScopes",
+    "horizontalScroll",
+    "contentEmphasis"
   ],
   "permissions": {
     "network": [],
@@ -59,7 +61,8 @@
         "icon": "history"
       },
       "appBar": {
-        "title": "LocalizedTitle"
+        "title": "LocalizedTitle",
+        "actions": "FeedActions"
       }
     },
     {

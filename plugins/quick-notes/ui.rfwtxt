@@ -1,2 +1,12 @@
 import fluxdo;
-widget Card = TextInput(label: "随手记", hint: "记下待办或灵感", value: data.note, maxLines: 4, onChanged: event "save" {});
+widget Card = Column(crossAxisAlignment: "stretch", mainAxisSize: "min", children: [
+  TextInput(hint: data.i18n.s235fda8bb6360899, value: data.note, variant: "filled", minLines: 3, maxLines: 6, onChanged: event "save" {}),
+  Gap(size: 8), Wrap(spacing: 12.0, runSpacing: 4.0, crossAxisAlignment: "center", children: [
+    Label(text: data.count, style: "labelSmall", color: "onSurfaceVariant"),
+    Label(text: data.status, style: "labelSmall", color: switch data.failed {true: "error", default: "onSurfaceVariant"}),
+    switch data.failed {true: Button(label: data.i18n.sb8784c8dd5636ff2, variant: "text", onPressed: event "retry" {}), default: SizedBoxShrink()},
+  ]),
+  ActionBar(actions: [CopyButton(text: data.note), Button(label: data.i18n.s1ef3de06b32e521b, variant: "text", enabled: data.hasNote, loading: data.confirming, onPressed: event "clear" {})]),
+]);
+
+widget LocalizedTitle = Label(text: data.pageTitle, style: "titleLarge", maxLines: 1);

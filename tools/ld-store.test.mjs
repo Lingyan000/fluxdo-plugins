@@ -860,3 +860,17 @@ test('宿主收回证据句柄后停止上传操作，失效句柄不再次提�
   const p=await t.page('report',{type:'product',id:'1'});await t.fire(p,'evidencePick');await t.fire(p,'files.invalidated');
   assert.equal(p.data.attachmentReady,false);await t.fire(p,'evidenceUpload');assert.equal(uploads,0);
 });
+
+test('商品主入口登录防连点，完成只刷新资格而不建单或支付',async()=>{
+ let release;let entered=0;
+ const t=setup({authorized:false,claims:restoredClaims,respond:r=>r.url.pathname.endsWith('/auth/init')?
+  {state:'s',auth_url:'https://connect.linux.do/oauth2/authorize?redirect_uri=https%3A%2F%2Fapi.ldspro.qzz.io%2Fapi%2Fauth%2Fcallback&state=s'}:
+  r.url.pathname.endsWith('/auth/verify')?{authenticated:true,user:{id:42}}:
+  r.url.pathname.endsWith('/products/p1')?{product:{id:'p1',name:'商品',price:10,stock:4,purchaseTrustLevel:1}}:{}});
+ const p=await t.page('product',{id:'p1'});
+ t.api.connect.authorize=async()=>{entered++;await new Promise(resolve=>release=resolve);return 'https://ldcstore.com/auth/callback#ldsp_oauth='+Buffer.from(JSON.stringify({s:'s',exp:1,c:'x'.repeat(43)})).toString('base64url');};
+ t.api.credentials.capture=async()=>{t.setAuthorized(true);return {claims:restoredClaims};};
+ const first=t.fire(p,'login');await flush();const second=t.fire(p,'login');await flush();
+ assert.equal(entered,1);release();await Promise.all([first,second]);assert.equal(p.data.authorized,true);assert.equal(p.data.loggingIn,false);
+ assert.ok(!t.calls.some(r=>r.url.pathname.includes('/orders')&&r.method==='POST'));assert.equal(t.nav.length,0);
+});

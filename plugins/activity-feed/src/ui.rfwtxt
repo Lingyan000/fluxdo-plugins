@@ -1,6 +1,7 @@
 import fluxdo;
 
 widget Card = Statistics(items: data.stats);
+widget FeedActions = Row(mainAxisSize: "min", children: [IconButton(icon: "add", tooltip: "添加订阅", onPressed: event "new" {}), IconButton(icon: "more_horiz", tooltip: "订阅管理", onPressed: event "manage" {})]);
 widget Feed = AdaptivePane(
   compactHeader: switch data.hasUsers {true: Padding(padding: [12.0, 4.0, 12.0, 0.0], child: PeopleStrip()), default: SizedBoxShrink()},
   sidebar: ListPage(header: Label(text: "我的订阅", style: "titleMedium"), items: [
@@ -8,9 +9,9 @@ widget Feed = AdaptivePane(
   ]),
   body: ListPage(empty: FeedEmpty(), loading: data.manual, hasMore: data.more, loadingMore: data.historyLoading, onLoadMore: event "more" {}, onRefresh: event "refresh" {},
     header: Column(crossAxisAlignment: "stretch", children: [
-      Row(children: [Expanded(child: Label(text: data.title, style: "labelLarge", color: "onSurfaceVariant")), IconButton(icon: "group", tooltip: "从关注中选择", onPressed: event "import" {}), IconButton(icon: "add", tooltip: "添加订阅", onPressed: event "new" {}), IconButton(icon: "settings", tooltip: "订阅管理", onPressed: event "manage" {})]),
+      Label(text: data.title, style: "labelLarge", color: "onSurfaceVariant"),
       switch data.hasUsers {true: Row(children: [
-        Expanded(child: SingleChildScrollView(scrollDirection: "horizontal", primary: false, child: Row(children: [
+        Expanded(child: HorizontalScroll(child: Row(children: [
           Choice(label: "未读", selected: data.unreadOnly, onSelected: event "unread" {}), Gap(size: 8),
           ...for t in data.types: Padding(padding: [0.0,0.0,6.0,0.0], child: Choice(label: t.label, selected: t.selected, onSelected: event "select" {kind: t.id}))
         ]))),
@@ -19,10 +20,10 @@ widget Feed = AdaptivePane(
       switch data.needsActivity {true: ListItem(title: "动态读取权限未开启", subtitle: "仍可查看已保存的动态", trailing: Button(label: "允许更新", variant: "tonal", onPressed: event "refresh" {})), default: SizedBoxShrink()},
       Notice()
     ]),
-    items: [...for r in data.items: ContentRow(title: r.title, summary: r.summary, meta: r.meta, leading: GestureDetector(child: Avatar(label: r.name, url: r.avatar), onTap: event "profile" {name: r.name}), detail: RelativeTime(value: r.time), onTap: event "topic" {topic: r.topic, post: r.post, owner: r.owner, id: r.id})]
+    items: [...for r in data.items: ContentRow(emphasized: r.unread, title: r.title, summary: r.summary, meta: r.meta, leading: GestureDetector(child: Avatar(label: r.name, url: r.avatar), onTap: event "profile" {name: r.name}), detail: RelativeTime(value: r.time), onTap: event "topic" {topic: r.topic, post: r.post, owner: r.owner, id: r.id})]
   )
 );
-widget PeopleStrip = SingleChildScrollView(scrollDirection: "horizontal", primary: false, child: Row(children: [...for p in data.people: Padding(padding: [0.0,0.0,4.0,0.0], child: Choice(label: p.label, layout: "stacked", leading: Avatar(label: p.name, url: p.avatar, size: 34, count: p.count), selected: p.selected, onSelected: event "select" {who: p.name}))]));
+widget PeopleStrip = HorizontalScroll(child: Row(children: [...for p in data.people: Padding(padding: [0.0,0.0,4.0,0.0], child: Choice(label: p.label, layout: "stacked", leading: Avatar(label: p.name, url: p.avatar, size: 34, count: p.count), selected: p.selected, onSelected: event "select" {who: p.name}))]));
 widget FeedEmpty = switch data.hasUsers {
   true: EmptyState(title: data.empty, icon: "history", action: switch data.filtered {true: Button(label: "清除筛选", variant: "text", onPressed: event "reset" {}), default: Button(label: "更新动态", variant: "text", onPressed: event "refresh" {})}),
   default: EmptyState(title: "订阅第一位用户", message: "关注的用户有新动态时，会出现在这里。", icon: "group", action: Wrap(alignment: "center", spacing: 8.0, children: [Button(label: "添加用户", icon: "add", onPressed: event "new" {}), Button(label: "从关注中选择", variant: "tonal", onPressed: event "import" {})]))

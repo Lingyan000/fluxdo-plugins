@@ -1,0 +1,10 @@
+import fluxdo;
+widget Card = Column(crossAxisAlignment: "stretch", mainAxisSize: "min", children: [
+  TextInput(hint: "记下待办或灵感", value: data.note, variant: "filled", minLines: 3, maxLines: 6, onChanged: event "save" {}),
+  Gap(size: 8), Wrap(spacing: 12.0, runSpacing: 4.0, crossAxisAlignment: "center", children: [
+    Label(text: data.count, style: "labelSmall", color: "onSurfaceVariant"),
+    Label(text: data.status, style: "labelSmall", color: switch data.failed {true: "error", default: "onSurfaceVariant"}),
+    switch data.failed {true: Button(label: "重试", variant: "text", onPressed: event "retry" {}), default: SizedBoxShrink()},
+  ]),
+  ActionBar(actions: [CopyButton(text: data.note), Button(label: "清空", variant: "text", enabled: data.hasNote, loading: data.confirming, onPressed: event "clear" {})]),
+]);
