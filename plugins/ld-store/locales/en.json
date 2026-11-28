@@ -536,5 +536,6 @@
   "输入消息": "Message",
   "搜索会话": "Search conversations",
   "还没有消息": "No messages yet",
-  "消息过长，请缩短后发送": "This message is too long. Shorten it before sending."
+  "消息过长，请缩短后发送": "This message is too long. Shorten it before sending.",
+  "登录后兑换": "Sign in to redeem"
 }

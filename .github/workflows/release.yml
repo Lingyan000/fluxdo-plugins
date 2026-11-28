@@ -8,6 +8,10 @@ on:
       preview:
         description: 作为预览版本发布
         type: boolean
+        default: false
+      draft:
+        description: 仅准备草稿，验收后再公开
+        type: boolean
         default: true
 permissions:
   contents: write
@@ -35,7 +39,7 @@ jobs:
           if(!/^[a-z0-9-]+$/.test(name)||!fs.readdirSync("plugins").includes(name))throw Error("插件目录无效");
           const manifest=JSON.parse(fs.readFileSync("plugins/"+name+"/plugin.json"));
           if(!/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/.test(manifest.version))throw Error("版本无效");
-          fs.appendFileSync(process.env.GITHUB_OUTPUT,"tag="+name+"-"+manifest.version+"\n");'
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,"tag="+name+"-v"+manifest.version+"\n");'
       - name: Sign release and verify package
         env:
           PLUGIN: ${{ inputs.plugin }}
@@ -53,8 +57,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag }}
           PREVIEW: ${{ inputs.preview }}
+          DRAFT: ${{ inputs.draft }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then echo '版本已存在，拒绝覆盖'; exit 1; fi
           args=()
+          if [ "$DRAFT" = true ]; then args+=(--draft); fi
           if [ "$PREVIEW" = true ]; then args+=(--prerelease); fi
           gh release create "$TAG" "artifacts/$TAG.fluxplugin" artifacts/SHA256SUMS.txt --target "$GITHUB_SHA" --title "$TAG" --generate-notes "${args[@]}"

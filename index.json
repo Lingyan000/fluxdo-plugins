@@ -57,7 +57,22 @@
           "summary": "按名單聚合論壇動態，保留最近記錄並提醒未讀。",
           "description": "按名單聚合論壇動態，保留最近記錄並提醒未讀。"
         }
-      }
+      },
+      "permissionsSummary": {
+        "permissions": [
+          "background",
+          "foregroundTasks",
+          "forumActivity",
+          "forumFollowing",
+          "forumProfiles",
+          "identity",
+          "notifications",
+          "sandbox"
+        ],
+        "networkHosts": [],
+        "linkHosts": []
+      },
+      "publisherKeyFingerprint": "3c7a4d7fc1828696057c350f14b0756675831dc930b0a28bf26a3ecfe9613e16"
     },
     {
       "id": "community.fluxdo.ldstore",
@@ -76,7 +91,28 @@
       ],
       "screenshots": [],
       "changelog": "商品、订单和评论支持上滑自动分页，商品卡片支持同排等高。需要更新 FluxDO 宿主，旧版仍可手动加载更多。",
-      "channel": "stable"
+      "channel": "stable",
+      "permissionsSummary": {
+        "permissions": [
+          "identity",
+          "links",
+          "network",
+          "payments",
+          "publicImages",
+          "sandbox",
+          "serviceAccount"
+        ],
+        "networkHosts": [
+          "api.ldspro.qzz.io",
+          "api1.ldspro.qzz.io",
+          "api2.ldspro.qzz.io",
+          "ldcstore.com"
+        ],
+        "linkHosts": [
+          "ldcstore.com"
+        ]
+      },
+      "publisherKeyFingerprint": null
     },
     {
       "id": "community.fluxdo.ldstore",
@@ -152,7 +188,31 @@
           "changelog": "整理商品評論區：統計與評論內容分區留白，沒有評論時使用獨立空態，首次載入顯示骨架；翻頁載入、錯誤重試與更多評論不再同時出現，已載入評論保持可見。改善回覆間距，評論關閉或沒有下一頁時停止翻頁。"
         }
       },
-      "channel": "preview"
+      "channel": "preview",
+      "permissionsSummary": {
+        "permissions": [
+          "background",
+          "foregroundTasks",
+          "identity",
+          "links",
+          "network",
+          "notifications",
+          "payments",
+          "publicImages",
+          "sandbox",
+          "serviceAccount"
+        ],
+        "networkHosts": [
+          "api.ldspro.qzz.io",
+          "api1.ldspro.qzz.io",
+          "api2.ldspro.qzz.io",
+          "ldcstore.com"
+        ],
+        "linkHosts": [
+          "ldcstore.com"
+        ]
+      },
+      "publisherKeyFingerprint": "3c7a4d7fc1828696057c350f14b0756675831dc930b0a28bf26a3ecfe9613e16"
     },
     {
       "id": "community.fluxdo.quicknotes",
@@ -171,7 +231,15 @@
       ],
       "screenshots": [],
       "changelog": "首次发布到 GitHub 插件市场。",
-      "channel": "stable"
+      "channel": "stable",
+      "permissionsSummary": {
+        "permissions": [
+          "sandbox"
+        ],
+        "networkHosts": [],
+        "linkHosts": []
+      },
+      "publisherKeyFingerprint": null
     },
     {
       "id": "community.fluxdo.quicknotes",
@@ -190,7 +258,15 @@
       ],
       "screenshots": [],
       "changelog": "切换到 API 2，继续使用原生组件与本地存储。",
-      "channel": "preview"
+      "channel": "preview",
+      "permissionsSummary": {
+        "permissions": [
+          "sandbox"
+        ],
+        "networkHosts": [],
+        "linkHosts": []
+      },
+      "publisherKeyFingerprint": null
     }
   ]
 }

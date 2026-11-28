@@ -1,6 +1,7 @@
 import fluxdo;
 
 widget Card = Statistics(items: data.stats);
+widget FeedActions = Row(mainAxisSize: "min", children: [IconButton(icon: "add", tooltip: data.i18n.sfa9d1a2012dc7f61, onPressed: event "new" {}), IconButton(icon: "more_horiz", tooltip: data.i18n.s3725212d2092c70a, onPressed: event "manage" {})]);
 widget Feed = AdaptivePane(
   compactHeader: switch data.hasUsers {true: Padding(padding: [12.0, 4.0, 12.0, 0.0], child: PeopleStrip()), default: SizedBoxShrink()},
   sidebar: ListPage(header: Label(text: data.i18n.s79aad303b15f3ed3, style: "titleMedium"), items: [
@@ -8,9 +9,9 @@ widget Feed = AdaptivePane(
   ]),
   body: ListPage(empty: FeedEmpty(), loading: data.manual, hasMore: data.more, loadingMore: data.historyLoading, onLoadMore: event "more" {}, onRefresh: event "refresh" {},
     header: Column(crossAxisAlignment: "stretch", children: [
-      Row(children: [Expanded(child: Label(text: data.title, style: "labelLarge", color: "onSurfaceVariant")), IconButton(icon: "group", tooltip: data.i18n.sfa669a1e79f7db60, onPressed: event "import" {}), IconButton(icon: "add", tooltip: data.i18n.sfa9d1a2012dc7f61, onPressed: event "new" {}), IconButton(icon: "settings", tooltip: data.i18n.s3725212d2092c70a, onPressed: event "manage" {})]),
+      Label(text: data.title, style: "labelLarge", color: "onSurfaceVariant"),
       switch data.hasUsers {true: Row(children: [
-        Expanded(child: SingleChildScrollView(scrollDirection: "horizontal", primary: false, child: Row(children: [
+        Expanded(child: HorizontalScroll(child: Row(children: [
           Choice(label: data.i18n.s4d0680f9efaef147, selected: data.unreadOnly, onSelected: event "unread" {}), Gap(size: 8),
           ...for t in data.types: Padding(padding: [0.0,0.0,6.0,0.0], child: Choice(label: t.label, selected: t.selected, onSelected: event "select" {kind: t.id}))
         ]))),
@@ -19,10 +20,10 @@ widget Feed = AdaptivePane(
       switch data.needsActivity {true: ListItem(title: data.i18n.sf959b11c48af2cac, subtitle: data.i18n.s02d786f1a036854d, trailing: Button(label: data.i18n.sa4d43e65c3f14473, variant: "tonal", onPressed: event "refresh" {})), default: SizedBoxShrink()},
       Notice()
     ]),
-    items: [...for r in data.items: ContentRow(title: r.title, summary: r.summary, meta: r.meta, leading: GestureDetector(child: Avatar(label: r.name, url: r.avatar), onTap: event "profile" {name: r.name}), detail: RelativeTime(value: r.time), onTap: event "topic" {topic: r.topic, post: r.post, owner: r.owner, id: r.id})]
+    items: [...for r in data.items: ContentRow(emphasized: r.unread, title: r.title, summary: r.summary, meta: r.meta, leading: GestureDetector(child: Avatar(label: r.name, url: r.avatar), onTap: event "profile" {name: r.name}), detail: RelativeTime(value: r.time), onTap: event "topic" {topic: r.topic, post: r.post, owner: r.owner, id: r.id})]
   )
 );
-widget PeopleStrip = SingleChildScrollView(scrollDirection: "horizontal", primary: false, child: Row(children: [...for p in data.people: Padding(padding: [0.0,0.0,4.0,0.0], child: Choice(label: p.label, layout: "stacked", leading: Avatar(label: p.name, url: p.avatar, size: 34, count: p.count), selected: p.selected, onSelected: event "select" {who: p.name}))]));
+widget PeopleStrip = HorizontalScroll(child: Row(children: [...for p in data.people: Padding(padding: [0.0,0.0,4.0,0.0], child: Choice(label: p.label, layout: "stacked", leading: Avatar(label: p.name, url: p.avatar, size: 34, count: p.count), selected: p.selected, onSelected: event "select" {who: p.name}))]));
 widget FeedEmpty = switch data.hasUsers {
   true: EmptyState(title: data.empty, icon: "history", action: switch data.filtered {true: Button(label: data.i18n.s657d9cbf45ec9e6a, variant: "text", onPressed: event "reset" {}), default: Button(label: data.i18n.sd50376b775b81ef6, variant: "text", onPressed: event "refresh" {})}),
   default: EmptyState(title: data.i18n.s5891162dfd7b0df0, message: data.i18n.seeb00343a5a2c958, icon: "group", action: Wrap(alignment: "center", spacing: 8.0, children: [Button(label: data.i18n.s40e8c231c87f5ad8, icon: "add", onPressed: event "new" {}), Button(label: data.i18n.sfa669a1e79f7db60, variant: "tonal", onPressed: event "import" {})]))

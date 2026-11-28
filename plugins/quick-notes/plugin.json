@@ -1,9 +1,9 @@
 {
-  "schema": 9,
+  "schema": 12,
   "apiVersion": 2,
   "id": "community.fluxdo.quicknotes",
   "name": "随手记",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "author": "FluxDO 社区",
   "description": "保存在设备上的轻量备忘，可在元宇宙中直接编辑。",
   "icon": "edit",
@@ -15,5 +15,26 @@
   "card": {
     "widget": "Card"
   },
-  "pages": []
+  "pages": [],
+  "requiredFeatures": [
+    "inputOptions",
+    "confirmationDialog",
+    "manifestLocalization",
+    "hostEnvironment",
+    "pageChrome"
+  ],
+  "locales": {
+    "en": {
+      "name": "Quick notes",
+      "description": "Lightweight notes stored on this device, editable in Metaverse."
+    },
+    "zh_TW": {
+      "name": "隨手記",
+      "description": "儲存在裝置上的輕量備忘，可在元宇宙中直接編輯。"
+    },
+    "zh_HK": {
+      "name": "隨手記",
+      "description": "保存在設備上的輕量備忘，可在元宇宙中直接編輯。"
+    }
+  }
 }

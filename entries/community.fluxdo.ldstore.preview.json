@@ -72,5 +72,29 @@
       "changelog": "整理商品評論區：統計與評論內容分區留白，沒有評論時使用獨立空態，首次載入顯示骨架；翻頁載入、錯誤重試與更多評論不再同時出現，已載入評論保持可見。改善回覆間距，評論關閉或沒有下一頁時停止翻頁。"
     }
   },
-  "channel": "preview"
+  "channel": "preview",
+  "permissionsSummary": {
+    "permissions": [
+      "background",
+      "foregroundTasks",
+      "identity",
+      "links",
+      "network",
+      "notifications",
+      "payments",
+      "publicImages",
+      "sandbox",
+      "serviceAccount"
+    ],
+    "networkHosts": [
+      "api.ldspro.qzz.io",
+      "api1.ldspro.qzz.io",
+      "api2.ldspro.qzz.io",
+      "ldcstore.com"
+    ],
+    "linkHosts": [
+      "ldcstore.com"
+    ]
+  },
+  "publisherKeyFingerprint": "3c7a4d7fc1828696057c350f14b0756675831dc930b0a28bf26a3ecfe9613e16"
 }

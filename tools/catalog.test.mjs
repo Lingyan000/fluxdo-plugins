@@ -139,3 +139,15 @@ test('渠道、撤回字段与签名校验',()=>{
  const payload=JSON.parse(bytes);payload.publisher={algorithm:'RSA-SHA256',key:{kty:'RSA',n:'bad',e:'AQAB'},signature:'bad'};
  const bad=Buffer.from(JSON.stringify(payload));assert.throws(()=>validatePackage(bad,{...entry,sha256:createHash('sha256').update(bad).digest('hex')}));
 });
+import {marketPreview} from './market-preview.mjs';
+test('权限预览从实际包推导，篡改摘要或发布者被拒绝，旧条目兼容', () => {
+  const preview=marketPreview(JSON.parse(bytes));
+  validatePackage(bytes,{...entry,...preview});
+  assert.deepEqual(preview,{permissionsSummary:{permissions:['sandbox'],networkHosts:[],linkHosts:[]},publisherKeyFingerprint:null});
+  assert.throws(()=>validatePackage(bytes,{...entry,...preview,permissionsSummary:{...preview.permissionsSummary,permissions:['identity','sandbox']}}),/摘要/);
+  assert.throws(()=>validatePackage(bytes,{...entry,...preview,publisherKeyFingerprint:'a'.repeat(64)}),/发布者/);
+  assert.throws(()=>validateEntry({...entry,permissionsSummary:{permissions:'invalid',networkHosts:[],linkHosts:[]}}));
+  const m={permissions:{network:['a.example.org'],identity:true,credentials:{session:{}},payments:['linuxDoCredit'],forum:['profiles','following'],background:true,notifications:true,publicImages:true},tasks:[{id:'sync'}],links:[{host:'a.example.org'}]};
+  assert.deepEqual(marketPreview({manifest:m}).permissionsSummary.permissions,
+    ['background','foregroundTasks','forumFollowing','forumProfiles','identity','links','network','notifications','payments','publicImages','sandbox','serviceAccount']);
+});

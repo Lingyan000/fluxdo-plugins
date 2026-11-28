@@ -1337,6 +1337,8 @@ fluxdo.on('market',() => fluxdo.navigate('market'));
 fluxdo.on('product',(ctx,a) => fluxdo.navigate('product',{id:a.id}));
 fluxdo.on('login',async ctx => {
   const s = market(ctx);
+  if(s?.loggingIn)return;
+  if(s)s.loggingIn=true;
   write(ctx,{loggingIn:true,loginError:''});
   try {
     if (!await ldStore.login(ctx.api)) return;
@@ -1357,7 +1359,7 @@ fluxdo.on('login',async ctx => {
     else if(ctx.page==='market')await refreshView(ctx);
     else ctx.setData('authorized',true);
   } catch (error) {ctx.setData('loginError',error.message || '登录未完成，请稍后重试。');}
-  finally {ctx.setData('loggingIn',false);}
+  finally {if(s)s.loggingIn=false;ctx.setData('loggingIn',false);}
 });
 async function requestAccess(client,names) {
   const status=await client.permissions.status();

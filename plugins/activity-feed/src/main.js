@@ -255,7 +255,7 @@
       candidatesLoading:!!v.candidatesLoading, candidatesError:v.candidatesError||'', nextCandidates:v.next!=null,
       types:[{id:'',label:'全部',selected:!v.kind},...Object.entries(labels).map(([id,label])=>({id,label,selected:id===v.kind}))],
       items:filtered.slice(0,v.take).map(x=>({...x,summary:x.summary||'',avatar:s.users.find(u=>u.id===x.owner)?.avatar||'',
-        meta:`${x.name} · ${labels[x.type]}${x.reaction?' '+x.reaction:''}${x.unread?' · 未读':''}`})),
+        meta:`${x.name} · ${labels[x.type]}${x.reaction?' '+x.reaction:''}`})),
       more:v.take<maxHistory&&(filtered.length>v.take||(!v.unreadOnly&&older&&!(v.history?.size>=maxHistory))), historyWindowEnd:(v.take>=maxHistory||v.history?.size>=maxHistory)&&(filtered.length>v.take||older), olderWindow:!!v.olderWindow, historyLoading:!!v.historyLoading, historyError:v.historyError||'', progress:v.progress||'', enabled:!!scheduled, background:scheduled?.background===true, notify, notificationBlocked:notify&&notification.system==='denied', notificationUnknown:notify&&notification.system==='unknown', notificationSettings:!!notification.canOpenSettings,
       pace:[10,30,60].map(n=>({n,label:`${n} 秒`,selected:n===(scheduled?.intervalSeconds||30)})),
       scheduleError:scheduled?.error?'更新未完成，将自动重试':''};

@@ -53,5 +53,20 @@
       "summary": "按名單聚合論壇動態，保留最近記錄並提醒未讀。",
       "description": "按名單聚合論壇動態，保留最近記錄並提醒未讀。"
     }
-  }
+  },
+  "permissionsSummary": {
+    "permissions": [
+      "background",
+      "foregroundTasks",
+      "forumActivity",
+      "forumFollowing",
+      "forumProfiles",
+      "identity",
+      "notifications",
+      "sandbox"
+    ],
+    "networkHosts": [],
+    "linkHosts": []
+  },
+  "publisherKeyFingerprint": "3c7a4d7fc1828696057c350f14b0756675831dc930b0a28bf26a3ecfe9613e16"
 }
